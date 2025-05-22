@@ -1,0 +1,42 @@
+# .gitignore para backend .NET
+bin/
+obj/
+*.db
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vs/
+.vscode/
+appsettings.Development.json
+appsettings.Local.json
+# Archivos de migraciones temporales
+Migrations/*Designer.cs
+
+# .gitignore para frontend Next.js
+.next/
+node_modules/
+dist/
+.env*
+.env.local
+.env.development
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Otros
+*.swp
+*.swo
+.idea/
+*.iml
+
+# Ignorar lockfiles de otros gestores si no se usan
+package-lock.json
+yarn.lock

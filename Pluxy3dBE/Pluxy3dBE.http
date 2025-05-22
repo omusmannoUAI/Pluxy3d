@@ -1,0 +1,6 @@
+@Pluxy3dBE_HostAddress = http://localhost:5283
+
+GET {{Pluxy3dBE_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
