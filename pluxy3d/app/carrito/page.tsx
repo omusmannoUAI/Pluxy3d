@@ -176,11 +176,16 @@ export default function CartPage() {
 
                 <div className="pt-4">
                   <p className="text-sm text-muted-foreground text-center">Aceptamos múltiples métodos de pago</p>
-                  <div className="flex justify-center gap-2 mt-2">
-                    <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                    <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                    <div className="w-10 h-6 bg-gray-200 rounded"></div>
-                    <div className="w-10 h-6 bg-gray-200 rounded"></div>
+                  <div className="flex justify-center gap-4 mt-2 items-center">
+                    <Image src="/visa.png" alt="Visa" width={48} height={32} style={{ objectFit: "contain" }} />
+                    <Image
+                      src="/mastercard.png"
+                      alt="MasterCard"
+                      width={48}
+                      height={32}
+                      style={{ objectFit: "contain" }}
+                    />
+                    <Image src="/mercadopago.png" alt="Mercado Pago" width={60} height={32} style={{ objectFit: "contain" }} />
                   </div>
                 </div>
               </CardContent>
