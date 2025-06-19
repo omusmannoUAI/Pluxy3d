@@ -150,7 +150,7 @@ export default function StatusPage() {
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="text-center space-y-4">
                     <p className="text-muted-foreground">La impresora está lista para un nuevo trabajo.</p>
-                    <Button className="bg-purple-600 hover:bg-purple-700">Iniciar Nueva Impresión</Button>
+                    <Button variant="purple">Iniciar Nueva Impresión</Button>
                   </div>
                 </div>
               )}

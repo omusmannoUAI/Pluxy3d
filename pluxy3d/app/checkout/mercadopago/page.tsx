@@ -14,7 +14,7 @@ export default function CheckoutMercadoPagoPage() {
           <CardTitle>Serás redirigido a Mercado Pago</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button className="w-full bg-purple-600 hover:bg-purple-700" size="lg" asChild>
+          <Button variant="purple" className="w-full" size="lg" asChild>
             <Link href="/checkout/mercadopago/success">Ir a Mercado Pago</Link>
           </Button>
           <Separator />

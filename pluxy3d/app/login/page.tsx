@@ -4,12 +4,11 @@ import type React from "react"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChromeIcon as Google } from "lucide-react"
 import Link from "next/link"
+import { FormField, EmailField } from "@/components/shared/FormFields"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -44,74 +43,61 @@ export default function LoginPage() {
               </TabsList>
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail o teléfono</Label>
-                    <Input
-                      id="email"
-                      type="text"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                  <EmailField
+                    id="email"
+                    label="E-mail o teléfono"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={setEmail}
+                    required
+                  />
+                  <FormField
+                    id="password"
+                    label="Contraseña"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={setPassword}
+                    required
+                  />
+                  <div className="text-right">
+                    <Link href="/recuperar-password" className="text-sm text-purple-600 hover:underline">
+                      ¿Olvidaste tu contraseña?
+                    </Link>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Contraseña</Label>
-                      <Link href="/recuperar-password" className="text-sm text-purple-600 hover:underline">
-                        ¿Olvidaste tu contraseña?
-                      </Link>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                  <Button type="submit" variant="purple" className="w-full">
                     Iniciar Sesión
                   </Button>
                 </form>
               </TabsContent>
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nombre completo</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Tu nombre"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">E-mail</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Contraseña</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                  <FormField
+                    id="name"
+                    label="Nombre completo"
+                    placeholder="Tu nombre"
+                    value={name}
+                    onChange={setName}
+                    required
+                  />
+                  <EmailField
+                    id="register-email"
+                    label="E-mail"
+                    placeholder="tu@email.com"
+                    value={email}
+                    onChange={setEmail}
+                    required
+                  />
+                  <FormField
+                    id="register-password"
+                    label="Contraseña"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={setPassword}
+                    required
+                  />
+                  <Button type="submit" variant="purple" className="w-full">
                     Crear Cuenta
                   </Button>
                 </form>

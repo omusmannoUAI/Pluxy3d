@@ -18,7 +18,7 @@ export function useCartLogic() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
 
   useEffect(() => {
-    apiFetch("/carrito")
+    apiFetch("api/Carrito")
       .then((data) => setCartItems(data as CartItem[]))
       .catch(console.error)
   }, [])

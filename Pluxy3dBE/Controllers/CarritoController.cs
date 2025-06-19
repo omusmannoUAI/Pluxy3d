@@ -29,11 +29,26 @@ namespace Pluxy3dBE.Controllers
             return Ok(result);
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateItem(int id, [FromBody] UpdateCartItemDto updateDto)
+        {
+            var result = await _carritoService.UpdateItemAsync(id, updateDto.Quantity);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> RemoveItem(int id)
         {
             var result = await _carritoService.RemoveItemAsync(id);
             if (!result) return NotFound();
+            return NoContent();
+        }
+
+        [HttpDelete("clear")]
+        public async Task<IActionResult> ClearCart()
+        {
+            var result = await _carritoService.ClearCartAsync();
             return NoContent();
         }
     }

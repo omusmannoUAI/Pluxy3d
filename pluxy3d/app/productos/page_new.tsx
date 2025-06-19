@@ -5,43 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Search } from "lucide-react"
-import { ProductCard } from "@/components/shared/ProductCard"
-import { Product } from "@/lib/types"
+import { ProductCard, type Product } from "@/components/shared/ProductCard"
 import { ProductFilters } from "@/components/shared/ProductFilters"
-import { useState, useEffect } from "react"
-import { apiFetch } from "@/lib/api"
+import { useState } from "react"
 
 export default function ProductosPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedBrands, setSelectedBrands] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState<[number]>([500000])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-
-  // Load products from backend
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await apiFetch('/productos')
-        const mappedProducts = data.map((p: any) => ({
-          id: p.id,
-          name: p.nombre,
-          description: p.descripcion,
-          price: p.precio,
-          image: p.image,
-          category: p.categoria,
-          brand: p.marca
-        }))
-        setProducts(mappedProducts)
-      } catch (error) {
-        console.error('Error loading products:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadProducts()
-  }, [])
 
   const categories = [
     { id: "impresoras", label: "Impresoras 3D", count: 5 },
@@ -122,62 +93,34 @@ export default function ProductosPage() {
               <TabsTrigger value="componentes">Componentes</TabsTrigger>
               <TabsTrigger value="filamentos">Filamentos</TabsTrigger>
               <TabsTrigger value="accesorios">Accesorios</TabsTrigger>
-            </TabsList>            <TabsContent value="all" className="mt-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-64"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-              )}
+            </TabsList>
+
+            <TabsContent value="all" className="mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
             </TabsContent>
 
             <TabsContent value="impresoras" className="mt-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-64"></div>
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products
+                  .filter((product) => product.category === "impresora")
+                  .map((product) => (
+                    <ProductCard key={product.id} product={product} />
                   ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products
-                    .filter((product) => product.category === "impresora")
-                    .map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
-              )}
+              </div>
             </TabsContent>
 
             <TabsContent value="componentes" className="mt-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-64"></div>
-                    </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products
+                  .filter((product) => product.category === "componente")
+                  .map((product) => (
+                    <ProductCard key={product.id} product={product} />
                   ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products
-                    .filter((product) => product.category === "componente")
-                    .map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
-              )}
+              </div>
             </TabsContent>
 
             <TabsContent value="filamentos" className="mt-6">
@@ -211,5 +154,63 @@ export default function ProductosPage() {
           </div>
         </div>
       </div>
-    </div>  )
+    </div>
+  )
 }
+
+const products: Product[] = [
+  {
+    id: 1,
+    name: "Creality Ender 3 V2",
+    description: "Impresora 3D de alta calidad para principiantes y profesionales.",
+    price: 320000,
+    image: "/ender3v2.webp",
+    category: "impresora",
+    brand: "Creality",
+  },
+  {
+    id: 2,
+    name: "Kit Mejora Ender-3",
+    description: "Kit de mejora para tu impresora Ender 3 con extrusor, teflón y resortes.",
+    price: 22750,
+    image: "/kitmejora.webp",
+    category: "componente",
+    brand: "Creality",
+  },
+  {
+    id: 3,
+    name: "Kit Doble Tracción",
+    description: "Sistema de doble tracción para mejorar la precisión de tus impresiones.",
+    price: 19000,
+    image: "/doble.webp",
+    category: "componente",
+    brand: "Creality",
+  },
+  {
+    id: 4,
+    name: "Hellbot Magna 2",
+    description: "Impresora 3D de gran formato con doble extrusor y cama caliente.",
+    price: 450000,
+    image: "/placeholder.svg?height=300&width=400",
+    category: "impresora",
+    brand: "Hellbot",
+  },
+  {
+    id: 5,
+    name: "Prusa i3 MK3S+",
+    description: "La impresora 3D más confiable del mercado, con excelente calidad de impresión.",
+    price: 520000,
+    image: "/placeholder.svg?height=300&width=400",
+    category: "impresora",
+    brand: "Prusa",
+  },
+  {
+    id: 6,
+    name: "HotEnd V6",
+    description: "HotEnd de alta temperatura para filamentos técnicos y abrasivos.",
+    price: 15000,
+    image: "/placeholder.svg?height=300&width=400",
+    category: "componente",
+    brand: "Creality",
+  },
+]

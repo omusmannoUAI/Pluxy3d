@@ -1,12 +1,14 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { MessageSquare, Bot, Printer, Wrench, FileQuestion, User } from "lucide-react"
 import Link from "next/link"
+import { FormField, FormTextarea } from "@/components/shared/FormFields"
 
 export default function SoportePage() {
   return (
@@ -41,10 +43,12 @@ export default function SoportePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">Asunto</Label>
-                    <Input id="subject" placeholder="Describe brevemente tu problema" />
-                  </div>
+                  <FormField
+                    id="subject"
+                    label="Asunto"
+                    placeholder="Describe brevemente tu problema"
+                    required
+                  />
                   <div className="space-y-2">
                     <Label htmlFor="printer-model">Modelo de Impresora</Label>
                     <Select>
@@ -77,24 +81,24 @@ export default function SoportePage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Descripción Detallada</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Describe detalladamente el problema que estás experimentando"
-                      rows={5}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="attachments">Adjuntos (opcional)</Label>
-                    <Input id="attachments" type="file" multiple />
-                    <p className="text-sm text-muted-foreground">
-                      Puedes adjuntar imágenes o videos que muestren el problema.
-                    </p>
-                  </div>
+                  <FormTextarea
+                    id="description"
+                    label="Descripción Detallada"
+                    placeholder="Describe detalladamente el problema que estás experimentando"
+                    rows={5}
+                    required
+                  />
+                  <FormField
+                    id="attachments"
+                    label="Adjuntos (opcional)"
+                    type="file"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Puedes adjuntar imágenes o videos que muestren el problema.
+                  </p>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700">Enviar Ticket</Button>
+                  <Button variant="purple" className="w-full">Enviar Ticket</Button>
                 </CardFooter>
               </Card>
             </div>
@@ -197,7 +201,7 @@ export default function SoportePage() {
                 <CardFooter className="border-t pt-4">
                   <div className="flex w-full gap-2">
                     <Input placeholder="Escribe tu consulta aquí..." />
-                    <Button className="bg-purple-600 hover:bg-purple-700">Enviar</Button>
+                    <Button variant="purple">Enviar</Button>
                   </div>
                 </CardFooter>
               </Card>
@@ -245,7 +249,7 @@ export default function SoportePage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700" asChild>
+                  <Button variant="purple" className="w-full" asChild>
                     <Link href="/status">Monitorear Impresoras</Link>
                   </Button>
                 </CardFooter>
@@ -355,7 +359,7 @@ export default function SoportePage() {
                     Si no has encontrado la solución a tu problema, puedes contactarnos directamente:
                   </p>
                   <div className="space-y-4">
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700" asChild>
+                    <Button variant="purple" className="w-full" asChild>
                       <Link href="/soporte?tab=tickets">
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Crear Ticket de Soporte

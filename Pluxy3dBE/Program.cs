@@ -11,12 +11,10 @@ builder.Services.AddSwaggerGen();
 // Configurar CORS para permitir peticiones desde el frontend Next.js
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:3000") // Cambia el puerto si tu frontend usa otro
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowFrontend",
+        policy => policy.WithOrigins("http://localhost:3000")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod());
 });
 
 builder.Services.AddDbContext<Pluxy3dBE.Data.AppDbContext>(options =>
@@ -32,25 +30,70 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Mockup de datos para Productos y CarritoItems
+// Seed initial product data only (no cart items)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<Pluxy3dBE.Data.AppDbContext>();
     if (!db.Productos.Any())
     {
         db.Productos.AddRange(
-            new Pluxy3dBE.Models.Producto { Nombre = "Producto 1", Precio = 100 },
-            new Pluxy3dBE.Models.Producto { Nombre = "Producto 2", Precio = 200 }
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "Creality Ender 3 V2", 
+                Descripcion = "Impresora 3D de alta calidad para principiantes y profesionales.",
+                Precio = 320000,
+                Image = "/ender3v2.webp",
+                Categoria = "impresora",
+                Marca = "Creality"
+            },
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "Kit Mejora Ender-3", 
+                Descripcion = "Kit de mejora para tu impresora Ender 3 con extrusor, teflón y resortes.",
+                Precio = 22750,
+                Image = "/kitmejora.webp",
+                Categoria = "componente",
+                Marca = "Creality"
+            },
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "Kit Doble Tracción", 
+                Descripcion = "Sistema de doble tracción para mejorar la precisión de tus impresiones.",
+                Precio = 19000,
+                Image = "/doble.webp",
+                Categoria = "componente",
+                Marca = "Creality"
+            },
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "Hellbot Magna 2", 
+                Descripcion = "Impresora 3D de gran formato con doble extrusor y cama caliente.",
+                Precio = 450000,
+                Image = "/hellbot.png",
+                Categoria = "impresora",
+                Marca = "Hellbot"
+            },
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "Prusa i3 MK3S+", 
+                Descripcion = "La impresora 3D más confiable del mercado, con excelente calidad de impresión.",
+                Precio = 520000,
+                Image = "/placeholder.svg",
+                Categoria = "impresora",
+                Marca = "Prusa"
+            },
+            new Pluxy3dBE.Models.Producto { 
+                Nombre = "HotEnd V6", 
+                Descripcion = "HotEnd de alta temperatura para filamentos técnicos y abrasivos.",
+                Precio = 15000,
+                Image = "/placeholder.svg",
+                Categoria = "componente",
+                Marca = "Creality"
+            }
         );
-    }
-    if (!db.CarritoItems.Any())
+        db.SaveChanges();    }
+    // Always clear any existing cart items to ensure clean state
+    var existingCartItems = db.CarritoItems.ToList();
+    if (existingCartItems.Any())
     {
-        db.CarritoItems.AddRange(
-            new Pluxy3dBE.Models.CarritoItem { ProductoId = 1, Cantidad = 2 },
-            new Pluxy3dBE.Models.CarritoItem { ProductoId = 2, Cantidad = 1 }
-        );
+        db.CarritoItems.RemoveRange(existingCartItems);
+        db.SaveChanges();
     }
-    db.SaveChanges();
 }
 
 // Configure the HTTP request pipeline.
@@ -60,10 +103,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Usa la política de CORS definida
+app.UseCors("AllowFrontend");
+
 // Habilitar descubrimiento de controladores
 app.MapControllers();
-
-app.UseCors();
 
 var summaries = new[]
 {

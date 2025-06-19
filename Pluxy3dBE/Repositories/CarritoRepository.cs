@@ -19,9 +19,18 @@ namespace Pluxy3dBE.Repositories
             return await _context.CarritoItems.ToListAsync();
         }
 
+        public async Task<CarritoItem?> GetByIdAsync(int id)
+        {
+            return await _context.CarritoItems.FindAsync(id);
+        }
+
         public async Task AddAsync(CarritoItem item)
         {
             await _context.CarritoItems.AddAsync(item);
+        }        public Task UpdateAsync(CarritoItem item)
+        {
+            _context.CarritoItems.Update(item);
+            return Task.CompletedTask;
         }
 
         public async Task RemoveAsync(int id)
@@ -29,6 +38,12 @@ namespace Pluxy3dBE.Repositories
             var item = await _context.CarritoItems.FindAsync(id);
             if (item != null)
                 _context.CarritoItems.Remove(item);
+        }
+
+        public async Task ClearAsync()
+        {
+            var items = await _context.CarritoItems.ToListAsync();
+            _context.CarritoItems.RemoveRange(items);
         }
 
         public async Task SaveChangesAsync()

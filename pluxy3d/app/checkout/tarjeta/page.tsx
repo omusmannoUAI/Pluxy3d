@@ -2,8 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { FormField } from "@/components/shared/FormFields"
 import Link from "next/link"
 
 export default function CheckoutTarjetaPage() {
@@ -13,15 +13,34 @@ export default function CheckoutTarjetaPage() {
       <Card className="max-w-lg mx-auto">
         <CardHeader>
           <CardTitle>Ingresa los datos de tu tarjeta</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input placeholder="Nombre en la tarjeta" className="bg-white" />
-          <Input placeholder="Número de tarjeta" className="bg-white" maxLength={19} />
+        </CardHeader>        <CardContent className="space-y-4">
+          <FormField
+            id="cardName"
+            label="Nombre en la tarjeta"
+            placeholder="Nombre completo"
+            required
+          />
+          <FormField
+            id="cardNumber"
+            label="Número de tarjeta"
+            placeholder="1234 5678 9012 3456"
+            required
+          />
           <div className="flex gap-4">
-            <Input placeholder="MM/AA" className="bg-white" maxLength={5} />
-            <Input placeholder="CVV" className="bg-white" maxLength={4} />
+            <FormField
+              id="expiry"
+              label="Vencimiento"
+              placeholder="MM/AA"
+              required
+            />
+            <FormField
+              id="cvv"
+              label="CVV"
+              placeholder="123"
+              required
+            />
           </div>
-          <Button className="w-full bg-purple-600 hover:bg-purple-700" size="lg" asChild>
+          <Button variant="purple" className="w-full" size="lg" asChild>
             <Link href="/checkout/tarjeta/success">Pagar</Link>
           </Button>
           <Separator />

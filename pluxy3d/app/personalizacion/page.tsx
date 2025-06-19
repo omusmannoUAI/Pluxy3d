@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Printer, Wrench, Palette, ShoppingCart } from "lucide-react"
+import { Printer, Wrench, Palette } from "lucide-react"
 import Image from "next/image"
+import { OrderSummary } from "@/components/shared/OrderSummary"
 
 export default function PersonalizacionPage() {
   const [selectedPrinter, setSelectedPrinter] = useState<string | null>(null)
@@ -89,6 +90,24 @@ export default function PersonalizacionPage() {
 
       setSelectedBuildPlate(plate)
     }
+  }
+
+  // Prepare order items for OrderSummary
+  const orderItems = [];
+  if (selectedPrinter) {
+    const printerName = selectedPrinter === "ender3-v2" ? "Creality Ender 3 V2" : "Creality Ender 3";
+    const printerPrice = selectedPrinter === "ender3-v2" ? 320000 : 280000;
+    orderItems.push({ id: selectedPrinter, name: printerName, price: printerPrice, quantity: 1 });
+  }
+  if (selectedExtruder) {
+    const extruderName = selectedExtruder === "kit-mejora" ? "Kit Mejora Ender-3" : "Kit Doble Tracción";
+    const extruderPrice = selectedExtruder === "kit-mejora" ? 22750 : 19000;
+    orderItems.push({ id: selectedExtruder, name: extruderName, price: extruderPrice, quantity: 1 });
+  }
+  if (selectedBuildPlate) {
+    const plateName = selectedBuildPlate === "pei" ? "Placa PEI Magnética" : "Placa de Vidrio Templado";
+    const platePrice = selectedBuildPlate === "pei" ? 8500 : 6000;
+    orderItems.push({ id: selectedBuildPlate, name: plateName, price: platePrice, quantity: 1 });
   }
 
   return (
@@ -196,7 +215,7 @@ export default function PersonalizacionPage() {
               </div>
 
               <div className="mt-6">
-                <Button className="w-full bg-purple-600 hover:bg-purple-700" disabled={!selectedPrinter}>
+                <Button variant="purple" className="w-full" disabled={!selectedPrinter}>
                   Continuar a Componentes
                 </Button>
               </div>
@@ -358,7 +377,7 @@ export default function PersonalizacionPage() {
                 </div>
 
                 <div className="mt-6">
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700">Continuar a Apariencia</Button>
+                  <Button variant="purple" className="w-full">Continuar a Apariencia</Button>
                 </div>
               </div>
             </TabsContent>
@@ -458,7 +477,7 @@ export default function PersonalizacionPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700">Finalizar Personalización</Button>
+                  <Button variant="purple" className="w-full">Finalizar Personalización</Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -467,45 +486,14 @@ export default function PersonalizacionPage() {
 
         {/* Order Summary */}
         <div>
-          <Card className="sticky top-20">
-            <CardHeader>
-              <CardTitle>Resumen del Pedido</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selectedPrinter && (
-                <div className="flex justify-between">
-                  <span>{selectedPrinter === "ender3-v2" ? "Creality Ender 3 V2" : "Creality Ender 3"}</span>
-                  <span>${selectedPrinter === "ender3-v2" ? "320.000" : "280.000"}</span>
-                </div>
-              )}
-
-              {selectedExtruder && (
-                <div className="flex justify-between">
-                  <span>{selectedExtruder === "kit-mejora" ? "Kit Mejora Ender-3" : "Kit Doble Tracción"}</span>
-                  <span>${selectedExtruder === "kit-mejora" ? "22.750" : "19.000"}</span>
-                </div>
-              )}
-
-              {selectedBuildPlate && (
-                <div className="flex justify-between">
-                  <span>{selectedBuildPlate === "pei" ? "Placa PEI Magnética" : "Placa de Vidrio Templado"}</span>
-                  <span>${selectedBuildPlate === "pei" ? "8.500" : "6.000"}</span>
-                </div>
-              )}
-
-              <div className="border-t pt-4 mt-4">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>${totalPrice.toLocaleString()}</span>
-                </div>
-              </div>
-
-              <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Agregar al Carrito
-              </Button>
-            </CardContent>
-          </Card>
+          <OrderSummary
+            items={orderItems}
+            total={totalPrice}
+            showCheckoutButton={true}
+            checkoutLabel="Agregar al Carrito"
+            onCheckout={() => {}}
+            className="sticky top-20"
+          />
         </div>
       </div>
     </div>

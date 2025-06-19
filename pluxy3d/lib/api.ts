@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const API_URL = 'http://localhost:5283/api';
 
 export async function apiFetch(endpoint: string, options?: RequestInit) {
   try {

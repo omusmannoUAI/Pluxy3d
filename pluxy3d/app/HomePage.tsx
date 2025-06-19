@@ -1,6 +1,6 @@
-import HeroSection from "./HeroSection.js"
-import FeaturesSection from "./FeaturesSection.js"
-import FeaturedProductsSection from "./FeaturedProductsSection.js"
+import HeroSection from "./HeroSection"
+import FeaturesSection from "./FeaturesSection"
+import FeaturedProductsSection from "./FeaturedProductsSection"
 
 export default function Home() {
   return (

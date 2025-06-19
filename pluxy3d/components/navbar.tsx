@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useMemo } from "react"
 
 import Link from "next/link"
 import { useState } from "react"
@@ -19,10 +19,12 @@ import { cn } from "@/lib/utils"
 import { Search, ShoppingCart, User, Menu, X, Printer, Wrench, MessageSquare, Heart } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
+import { useCart } from "@/contexts/CartContext"
 
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const cartItemCount = 2 // This would come from your cart state
+  const { getTotalItems, items } = useCart()
+  const cartItemCount = useMemo(() => getTotalItems(), [items])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -163,7 +165,7 @@ export default function Navbar() {
                 <ShoppingCart className="h-5 w-5" />
               </Button>
               {cartItemCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-purple-600">
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-purple-600 hover:bg-purple-600">
                   {cartItemCount}
                 </Badge>
               )}

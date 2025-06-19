@@ -19,9 +19,9 @@ export default function CheckoutPage() {
           <CardHeader>
             <CardTitle>Tarjeta de crédito/débito</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full bg-purple-600 hover:bg-purple-700"
+          <CardContent>            <Button
+              variant="purple"
+              className="w-full"
               onClick={() => {
                 setSelectedMethod("tarjeta")
                 router.push("/checkout/tarjeta")
@@ -36,9 +36,9 @@ export default function CheckoutPage() {
           <CardHeader>
             <CardTitle>Mercado Pago</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Button
-              className="w-full bg-purple-600 hover:bg-purple-700"
+          <CardContent>            <Button
+              variant="purple"
+              className="w-full"
               onClick={() => {
                 setSelectedMethod("mercadopago")
                 router.push("/checkout/mercadopago")

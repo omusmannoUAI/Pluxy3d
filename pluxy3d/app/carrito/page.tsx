@@ -8,59 +8,60 @@ import { Separator } from "@/components/ui/separator"
 import { Trash2, Plus, Minus, ArrowRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { apiFetch } from "@/lib/api"
-
-interface CartItem {
-  id: number
-  name: string
-  description: string
-  price: number
-  image: string
-  quantity: number
-  discount?: {
-    percentage: number
-    originalPrice: number
-  }
-}
+import { PaymentMethodsDisplay } from "@/components/shared/PaymentMethods"
+import { formatPriceSimple } from "@/lib/helpers"
+import { useCart } from "@/contexts/CartContext"
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const { 
+    items: cartItems, 
+    loading, 
+    error, 
+    updateQuantity, 
+    removeFromCart, 
+    clearCart, 
+    getTotalPrice 
+  } = useCart()
 
-  useEffect(() => {
-    apiFetch("/carrito")
-      .then((data) => setCartItems(data as CartItem[]))
-      .catch(console.error)
-  }, [])
-
-  const updateQuantity = (id: number, newQuantity: number) => {
-    if (newQuantity < 1) return
-
-    setCartItems(cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
-  }
-
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
-  }
-
-  const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-
+  const subtotal = getTotalPrice()
   const discount = cartItems.reduce(
     (total, item) => total + (item.discount ? (item.discount.originalPrice - item.price) * item.quantity : 0),
     0,
   )
-
   const shipping: number = 0 // Free shipping
   const total = subtotal + shipping
 
+  const handleUpdateQuantity = async (id: number, newQuantity: number) => {
+    if (newQuantity < 1) return
+    await updateQuantity(id, newQuantity)
+  }
+
+  const handleRemoveItem = async (id: number) => {
+    await removeFromCart(id)
+  }
+
+  const handleClearCart = async () => {
+    await clearCart()
+  }
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Carrito de Compras</h1>
 
-      {cartItems.length === 0 ? (
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      {loading && cartItems.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-muted-foreground">Cargando carrito...</p>
+        </div>
+      ) : cartItems.length === 0 ? (
         <div className="text-center py-16">
           <h2 className="text-2xl font-semibold mb-4">Tu carrito está vacío</h2>
           <p className="text-muted-foreground mb-8">Parece que aún no has agregado productos a tu carrito.</p>
-          <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700">
+          <Button asChild size="lg" variant="purple">
             <Link href="/productos">Explorar Productos</Link>
           </Button>
         </div>
@@ -80,14 +81,13 @@ export default function CartPage() {
                       </div>
                       <div className="flex-grow space-y-2">
                         <h3 className="font-medium">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
-                        <div className="flex items-center">
+                        <p className="text-sm text-muted-foreground">{item.description}</p>                        <div className="flex items-center">
                           {item.discount && (
                             <span className="text-sm line-through text-muted-foreground mr-2">
                               ${item.discount.originalPrice.toLocaleString()}
                             </span>
                           )}
-                          <span className="font-bold">${item.price.toString()}</span>
+                          <span className="font-bold">{formatPriceSimple(item.price)}</span>
                           {item.discount && (
                             <span className="ml-2 text-sm bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
                               -{item.discount.percentage}%
@@ -101,7 +101,7 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-none"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -110,7 +110,7 @@ export default function CartPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 rounded-none"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -119,7 +119,7 @@ export default function CartPage() {
                           variant="ghost"
                           size="icon"
                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => handleRemoveItem(item.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -132,8 +132,7 @@ export default function CartPage() {
               <CardFooter className="flex justify-between">
                 <Button variant="outline" asChild>
                   <Link href="/productos">Seguir Comprando</Link>
-                </Button>
-                <Button variant="destructive" onClick={() => setCartItems([])}>
+                </Button>                <Button variant="destructive" onClick={handleClearCart}>
                   Vaciar Carrito
                 </Button>
               </CardFooter>
@@ -145,48 +144,34 @@ export default function CartPage() {
               <CardHeader>
                 <CardTitle>Resumen</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
+              <CardContent className="space-y-4">                <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toLocaleString()}</span>
+                  <span>{formatPriceSimple(subtotal)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Descuento</span>
-                    <span>-${discount.toLocaleString()}</span>
+                    <span>-{formatPriceSimple(discount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Envío</span>
-                  <span>{shipping === 0 ? "Gratis" : `$${shipping.toLocaleString()}`}</span>
+                  <span>{shipping === 0 ? "Gratis" : formatPriceSimple(shipping)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span>{formatPriceSimple(total)}</span>
                 </div>
 
                 <div className="pt-4">
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700" size="lg" asChild>
+                  <Button className="w-full" variant="purple" size="lg" asChild>
                     <Link href="/checkout">
                       Finalizar Compra <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
-                </div>
-
-                <div className="pt-4">
-                  <p className="text-sm text-muted-foreground text-center">Aceptamos múltiples métodos de pago</p>
-                  <div className="flex justify-center gap-4 mt-2 items-center">
-                    <Image src="/visa.png" alt="Visa" width={48} height={32} style={{ objectFit: "contain" }} />
-                    <Image
-                      src="/mastercard.png"
-                      alt="MasterCard"
-                      width={48}
-                      height={32}
-                      style={{ objectFit: "contain" }}
-                    />
-                    <Image src="/mercadopago.png" alt="Mercado Pago" width={60} height={32} style={{ objectFit: "contain" }} />
-                  </div>
+                </div>                <div className="pt-4">
+                  <PaymentMethodsDisplay />
                 </div>
               </CardContent>
             </Card>

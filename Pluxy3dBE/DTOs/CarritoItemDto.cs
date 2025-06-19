@@ -12,6 +12,11 @@ namespace Pluxy3dBE.DTOs
         public DiscountDto? Discount { get; set; }
     }
 
+    public class UpdateCartItemDto
+    {
+        public int Quantity { get; set; }
+    }
+
     public class DiscountDto
     {
         public int Percentage { get; set; }
