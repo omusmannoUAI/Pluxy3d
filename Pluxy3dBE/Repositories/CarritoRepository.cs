@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Pluxy3dBE.Data;
@@ -38,12 +39,22 @@ namespace Pluxy3dBE.Repositories
             var item = await _context.CarritoItems.FindAsync(id);
             if (item != null)
                 _context.CarritoItems.Remove(item);
-        }
-
-        public async Task ClearAsync()
+        }        public async Task ClearAsync()
         {
-            var items = await _context.CarritoItems.ToListAsync();
-            _context.CarritoItems.RemoveRange(items);
+            try
+            {
+                // Use raw SQL to clear the table more efficiently
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM CarritoItems");
+            }
+            catch (Exception)
+            {
+                // Fallback to the traditional approach
+                var items = await _context.CarritoItems.ToListAsync();
+                if (items.Any())
+                {
+                    _context.CarritoItems.RemoveRange(items);
+                }
+            }
         }
 
         public async Task SaveChangesAsync()

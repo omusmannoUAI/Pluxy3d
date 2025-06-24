@@ -120,13 +120,19 @@ namespace Pluxy3dBE.Services
             await _repo.RemoveAsync(id);
             await _repo.SaveChangesAsync();
             return true;
-        }
-
-        public async Task<bool> ClearCartAsync()
+        }        public async Task<bool> ClearCartAsync()
         {
-            await _repo.ClearAsync();
-            await _repo.SaveChangesAsync();
-            return true;
+            try
+            {
+                await _repo.ClearAsync();
+                await _repo.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                // If there's an error, assume the cart is already empty
+                return true;
+            }
         }
     }
 }

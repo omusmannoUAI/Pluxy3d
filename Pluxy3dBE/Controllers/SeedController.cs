@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Pluxy3dBE.Data;
 using Pluxy3dBE.Models;
+using System.Linq;
 
 namespace Pluxy3dBE.Controllers
 {
@@ -13,16 +14,26 @@ namespace Pluxy3dBE.Controllers
         public SeedController(AppDbContext context)
         {
             _context = context;
-        }
-
-        [HttpPost("productos")]
+        }        [HttpPost("productos")]
         public async Task<IActionResult> SeedProductos()
         {
             try
             {
-                // Clear existing products first
-                _context.Productos.RemoveRange(_context.Productos);
-                await _context.SaveChangesAsync();
+                // Clear existing cart items first to avoid foreign key issues
+                var existingCartItems = _context.CarritoItems.ToList();
+                if (existingCartItems.Any())
+                {
+                    _context.CarritoItems.RemoveRange(existingCartItems);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Clear existing products
+                var existingProducts = _context.Productos.ToList();
+                if (existingProducts.Any())
+                {
+                    _context.Productos.RemoveRange(existingProducts);
+                    await _context.SaveChangesAsync();
+                }
 
                 var productos = new List<Producto>
                 {
@@ -176,20 +187,26 @@ namespace Pluxy3dBE.Controllers
                     error = ex.Message 
                 });
             }
-        }
-
-        [HttpPost("clear")]
+        }        [HttpPost("clear")]
         public async Task<IActionResult> ClearDatabase()
         {
             try
             {
                 // Clear cart items first (foreign key constraint)
-                _context.CarritoItems.RemoveRange(_context.CarritoItems);
+                var cartItems = _context.CarritoItems.ToList();
+                if (cartItems.Any())
+                {
+                    _context.CarritoItems.RemoveRange(cartItems);
+                    await _context.SaveChangesAsync();
+                }
                 
                 // Then clear products
-                _context.Productos.RemoveRange(_context.Productos);
-                
-                await _context.SaveChangesAsync();
+                var products = _context.Productos.ToList();
+                if (products.Any())
+                {
+                    _context.Productos.RemoveRange(products);
+                    await _context.SaveChangesAsync();
+                }
 
                 return Ok(new { message = "Base de datos limpiada exitosamente" });
             }
@@ -200,7 +217,7 @@ namespace Pluxy3dBE.Controllers
                     error = ex.Message 
                 });
             }
-        }        [HttpGet("stats")]
+        }[HttpGet("stats")]
         public IActionResult GetStats()
         {
             try
