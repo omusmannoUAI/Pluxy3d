@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>13.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="8.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pluxy3dBE.Domain\Pluxy3dBE.Domain.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.Repository\Pluxy3dBE.Repository.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.DomainContracts\Pluxy3dBE.DomainContracts.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.DalContracts\Pluxy3dBE.DalContracts.csproj" />
+  </ItemGroup>
+
+</Project>

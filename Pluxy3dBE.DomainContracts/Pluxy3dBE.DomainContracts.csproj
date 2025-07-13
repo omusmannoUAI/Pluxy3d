@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>13.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pluxy3dBE.Entities\Pluxy3dBE.Entities.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.DalContracts\Pluxy3dBE.DalContracts.csproj" />
+  </ItemGroup>
+
+</Project>

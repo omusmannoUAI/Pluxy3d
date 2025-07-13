@@ -1,0 +1,216 @@
+using Microsoft.EntityFrameworkCore;
+using Pluxy3dBE.Entities;
+
+namespace Pluxy3dBE.Repository.Data;
+
+/// <summary>
+/// Contexto de base de datos principal
+/// </summary>
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    // DbSets para las entidades
+    public DbSet<Producto> Productos { get; set; }
+    public DbSet<CarritoItem> CarritoItems { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; }
+    public DbSet<Orden> Ordenes { get; set; }
+    public DbSet<OrdenItem> OrdenItems { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Configuración de Producto
+        modelBuilder.Entity<Producto>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Nombre).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Descripcion).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Precio).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Image).HasMaxLength(500);
+            entity.Property(e => e.Categoria).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Marca).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.FechaActualizacion).HasDefaultValueSql("GETUTCDATE()");
+
+            // Índices
+            entity.HasIndex(e => e.Categoria);
+            entity.HasIndex(e => e.Marca);
+            entity.HasIndex(e => e.Activo);
+        });
+
+        // Configuración de CarritoItem
+        modelBuilder.Entity<CarritoItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.FechaAgregado).HasDefaultValueSql("GETUTCDATE()");
+
+            // Relación con Producto
+            entity.HasOne(e => e.Producto)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            // Índices
+            entity.HasIndex(e => e.UsuarioId);
+            entity.HasIndex(e => e.SessionId);
+            entity.HasIndex(e => e.ProductoId);
+        });
+
+        // Configuración de Usuario
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Nombre).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Apellido).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.PasswordHash).IsRequired();
+            entity.Property(e => e.Salt).IsRequired();
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+
+            // Índices únicos
+            entity.HasIndex(e => e.Email).IsUnique();
+        });
+
+        // Configuración de Orden
+        modelBuilder.Entity<Orden>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.NumeroOrden).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Total).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Estado).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.DireccionEnvio).HasMaxLength(500);
+            entity.Property(e => e.MetodoPago).HasMaxLength(50);
+            entity.Property(e => e.Notas).HasMaxLength(1000);
+            entity.Property(e => e.FechaCreacion).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.FechaActualizacion).HasDefaultValueSql("GETUTCDATE()");
+
+            // Relación con Usuario
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            // Índices
+            entity.HasIndex(e => e.NumeroOrden).IsUnique();
+            entity.HasIndex(e => e.Estado);
+            entity.HasIndex(e => e.FechaCreacion);
+        });
+
+        // Configuración de OrdenItem
+        modelBuilder.Entity<OrdenItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(18,2)");
+
+            // Relación con Orden
+            entity.HasOne(e => e.Orden)
+                  .WithMany(o => o.Items)
+                  .HasForeignKey(e => e.OrdenId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // Relación con Producto
+            entity.HasOne(e => e.Producto)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductoId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Datos semilla
+        SeedData(modelBuilder);
+    }
+
+    private static void SeedData(ModelBuilder modelBuilder)
+    {
+        // Productos iniciales
+        modelBuilder.Entity<Producto>().HasData(
+            new Producto
+            {
+                Id = 1,
+                Nombre = "Creality Ender 3 V2",
+                Descripcion = "Impresora 3D de alta calidad para principiantes y profesionales.",
+                Precio = 320000,
+                Image = "/ender3v2.webp",
+                Categoria = "impresora",
+                Marca = "Creality",
+                Stock = 10,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            },
+            new Producto
+            {
+                Id = 2,
+                Nombre = "Kit Mejora Ender-3",
+                Descripcion = "Kit de mejora para tu impresora Ender 3 con extrusor, teflón y resortes.",
+                Precio = 22750,
+                Image = "/kitmejora.webp",
+                Categoria = "componente",
+                Marca = "Creality",
+                Stock = 25,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            },
+            new Producto
+            {
+                Id = 3,
+                Nombre = "Kit Doble Tracción",
+                Descripcion = "Sistema de doble tracción para mejorar la precisión de tus impresiones.",
+                Precio = 19000,
+                Image = "/doble.webp",
+                Categoria = "componente",
+                Marca = "Creality",
+                Stock = 15,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            },
+            new Producto
+            {
+                Id = 4,
+                Nombre = "Hellbot Magna 2",
+                Descripcion = "Impresora 3D de gran formato con doble extrusor y cama caliente.",
+                Precio = 450000,
+                Image = "/hellbot.png",
+                Categoria = "impresora",
+                Marca = "Hellbot",
+                Stock = 5,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            },
+            new Producto
+            {
+                Id = 5,
+                Nombre = "Prusa i3 MK3S+",
+                Descripcion = "La impresora 3D más confiable del mercado, con excelente calidad de impresión.",
+                Precio = 520000,
+                Image = "/placeholder.svg",
+                Categoria = "impresora",
+                Marca = "Prusa",
+                Stock = 3,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            },
+            new Producto
+            {
+                Id = 6,
+                Nombre = "HotEnd V6",
+                Descripcion = "HotEnd de alta temperatura para filamentos técnicos y abrasivos.",
+                Precio = 15000,
+                Image = "/placeholder.svg",
+                Categoria = "componente",
+                Marca = "Creality",
+                Stock = 20,
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow,
+                FechaActualizacion = DateTime.UtcNow
+            }
+        );
+    }
+}

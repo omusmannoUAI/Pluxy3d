@@ -1,22 +1,34 @@
 ﻿{
-  "$schema": "http://json.schemastore.org/launchsettings.json",
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:13013",
-      "sslPort": 0
-    }
-  },
+  "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
     "http": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5283",
+      "applicationUrl": "http://localhost:5299",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5299",
+        "LOG_LEVEL": "Information",
+        "DATABASE_CONNECTION": "Data Source=pluxy3d.db",
+        "ENABLE_SWAGGER": "true",
+        "CORS_ORIGINS": "http://localhost:3000;https://localhost:3001"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7001;http://localhost:5299",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7001;http://localhost:5299",
+        "LOG_LEVEL": "Information",
+        "DATABASE_CONNECTION": "Data Source=pluxy3d.db",
+        "ENABLE_SWAGGER": "true",
+        "CORS_ORIGINS": "http://localhost:3000;https://localhost:3001"
       }
     },
     "IIS Express": {
@@ -24,8 +36,47 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "LOG_LEVEL": "Debug",
+        "DATABASE_CONNECTION": "Server=TUCHOPC\\SQLEXPRESS;Database=Pluxy3d;Trusted_Connection=True;TrustServerCertificate=True;",
+        "ENABLE_SWAGGER": "true",
+        "CORS_ORIGINS": "http://localhost:3000;https://localhost:3001"
       }
+    },
+    "Production": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ASPNETCORE_URLS": "http://localhost:8080",
+        "LOG_LEVEL": "Warning",
+        "ENABLE_SWAGGER": "false",
+        "DATABASE_CONNECTION": "Server=PROD_SERVER;Database=Pluxy3dProd;Trusted_Connection=True;TrustServerCertificate=True;"
+      }
+    },
+    "Staging": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:8081",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging",
+        "ASPNETCORE_URLS": "http://localhost:8081",
+        "LOG_LEVEL": "Information",
+        "ENABLE_SWAGGER": "true",
+        "DATABASE_CONNECTION": "Server=STAGING_SERVER;Database=Pluxy3dStaging;Trusted_Connection=True;TrustServerCertificate=True;"
+      }
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:44301",
+      "sslPort": 44380
     }
   }
 }
