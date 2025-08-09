@@ -21,7 +21,7 @@ public class CarritoProfile : Profile
         // Mapeo de DTO de agregar item a entidad
         CreateMap<AddCarritoItemDto, CarritoItem>()
             .ForMember(dest => dest.ItemId, opt => opt.Ignore())
-            .ForMember(dest => dest.ImpresoraId, opt => opt.MapFrom(src => src.ProductoId)) // Asumiendo que se mapea a ImpresoraId
+            .ForMember(dest => dest.ImpresoraId, opt => opt.MapFrom(src => src.ImpresoraId)) // Mapeo correcto a ImpresoraId
             .ForMember(dest => dest.Impresora, opt => opt.Ignore());
     }
 }

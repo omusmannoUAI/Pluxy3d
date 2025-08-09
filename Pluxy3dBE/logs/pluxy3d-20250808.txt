@@ -1,0 +1,16 @@
+2025-08-08 10:58:50.997 -03:00 [INF] Iniciando Pluxy3D Backend API
+2025-08-08 10:58:51.708 -03:00 [INF] Pluxy3D Backend API iniciada correctamente
+2025-08-08 10:58:51.821 -03:00 [INF] Now listening on: http://localhost:5299
+2025-08-08 10:58:51.825 -03:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-08-08 10:58:51.825 -03:00 [INF] Hosting environment: Development
+2025-08-08 10:58:51.826 -03:00 [INF] Content root path: c:\Users\Pluxy\source\repos\Pluxy3d\Pluxy3dBE
+2025-08-08 12:52:05.188 -03:00 [INF] Iniciando Pluxy3D Backend API
+2025-08-08 12:52:05.524 -03:00 [INF] Pluxy3D Backend API iniciada correctamente
+2025-08-08 13:05:04.207 -03:00 [WRN] Failed to determine the https port for redirect.
+2025-08-08 13:05:05.801 -03:00 [INF] HTTP GET /api/productos responded 200 in 1625.7330 ms
+2025-08-08 13:05:28.159 -03:00 [INF] HTTP GET /api/carrito responded 200 in 12.6527 ms
+2025-08-08 13:19:34.604 -03:00 [INF] Iniciando Pluxy3D Backend API
+2025-08-08 13:19:34.958 -03:00 [INF] Pluxy3D Backend API iniciada correctamente
+2025-08-08 13:19:52.869 -03:00 [WRN] Failed to determine the https port for redirect.
+2025-08-08 13:19:54.292 -03:00 [INF] HTTP GET /api/productos responded 200 in 1455.9118 ms
+2025-08-08 13:21:10.463 -03:00 [INF] HTTP GET /api/productos responded 200 in 20.8987 ms

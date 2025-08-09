@@ -23,15 +23,16 @@ export default function ProductosPage() {
     const loadProducts = async () => {
       try {
         const data = await apiFetch('/productos')
+        if (!Array.isArray(data)) { setProducts([]); return }
         const mappedProducts = data.map((p: any) => ({
           id: p.id,
-          name: p.nombre,
-          description: p.descripcion,
-          price: p.precio,
+          name: p.name,
+          description: p.description,
+          price: Number(p.price ?? 0),
           image: p.image,
-          category: p.categoria,
-          brand: p.marca
-        }))
+          category: p.category,
+          brand: p.brand
+        })) as Product[]
         setProducts(mappedProducts)
       } catch (error) {
         console.error('Error loading products:', error)

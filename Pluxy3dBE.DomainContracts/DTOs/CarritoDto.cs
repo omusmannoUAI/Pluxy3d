@@ -6,7 +6,7 @@ namespace Pluxy3dBE.DomainContracts.DTOs;
 public class CarritoItemDto
 {
     public int Id { get; set; }
-    public int ProductoId { get; set; }
+    public int ImpresoraId { get; set; }
     public string ProductoNombre { get; set; } = string.Empty;
     public string ProductoImage { get; set; } = string.Empty;
     public int Cantidad { get; set; }
@@ -19,7 +19,7 @@ public class CarritoItemDto
 /// </summary>
 public class AddCarritoItemDto
 {
-    public int ProductoId { get; set; }
+    public int ImpresoraId { get; set; }
     public int Cantidad { get; set; }
     public string? UsuarioId { get; set; }
     public string? SessionId { get; set; }

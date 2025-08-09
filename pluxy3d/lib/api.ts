@@ -1,15 +1,14 @@
-export const API_URL = 'http://localhost:5283/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5299/api';
 
 export async function apiFetch(endpoint: string, options?: RequestInit) {
   try {
     const res = await fetch(`${API_URL}${endpoint}`, options);
-    if (!res.ok) throw new Error('API error');
+    if (!res.ok) throw new Error(`API error ${res.status}`);
     return await res.json();
   } catch (error) {
-    // Devuelve un array vacío o un objeto vacío según el endpoint
+    // Fallbacks por endpoint
     if (endpoint.startsWith('/carrito')) return [];
     if (endpoint.startsWith('/productos')) return [];
-    // Puedes agregar más casos según tus endpoints
     return null;
   }
 }

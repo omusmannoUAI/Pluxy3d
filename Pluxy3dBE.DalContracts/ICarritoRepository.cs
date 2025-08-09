@@ -51,4 +51,9 @@ public interface ICarritoRepository : IRepository<CarritoItem>
     /// Transfiere items de carrito de sesión a usuario autenticado
     /// </summary>
     Task<bool> TransferSessionCartToUserAsync(string sessionId, string usuarioId);
+
+    /// <summary>
+    /// Obtiene carrito por usuario ID - devuelve la entidad Carrito completa
+    /// </summary>
+    Task<Carrito?> GetCarritoByUsuarioAsync(Guid usuarioId);
 }

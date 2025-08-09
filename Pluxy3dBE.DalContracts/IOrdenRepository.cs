@@ -3,14 +3,14 @@ using Pluxy3dBE.Entities;
 namespace Pluxy3dBE.DalContracts;
 
 /// <summary>
-/// Contrato específico para el repositorio de ventas
+/// Contrato específico para el repositorio de órdenes
 /// </summary>
-public interface IVentaRepository : IRepository<Venta>
+public interface IOrdenRepository : IRepository<Venta>
 {
     /// <summary>
     /// Obtiene órdenes por ID de usuario
     /// </summary>
-    Task<IEnumerable<Venta>> GetByUsuarioIdAsync(int usuarioId);
+    Task<IEnumerable<Venta>> GetByUsuarioIdAsync(Guid usuarioId);
 
     /// <summary>
     /// Obtiene una Venta por número de Venta

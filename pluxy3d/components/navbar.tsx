@@ -17,14 +17,14 @@ import {
 } from "@/components/ui/navigation-menu"
 import { cn } from "@/lib/utils"
 import { Search, ShoppingCart, User, Menu, X, Printer, Wrench, MessageSquare, Heart } from "lucide-react"
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/contexts/CartContext"
 
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { getTotalItems, items } = useCart()
-  const cartItemCount = useMemo(() => getTotalItems(), [items])
+  const cartItemCount = useMemo(() => getTotalItems(), [items, getTotalItems])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,6 +38,7 @@ export default function Navbar() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] sm:w-[350px]">
+              <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
               <div className="flex flex-col gap-6 py-4">
                 <Link href="/" className="flex items-center gap-2 font-bold text-xl" passHref>
                   <SheetClose asChild>
@@ -160,7 +161,7 @@ export default function Navbar() {
           )}
 
           <div className="relative">
-            <Link href="/carrito">
+            <Link href="/carrito" className="inline-block relative">
               <Button variant="ghost" size="icon" aria-label="Carrito">
                 <ShoppingCart className="h-5 w-5" />
               </Button>

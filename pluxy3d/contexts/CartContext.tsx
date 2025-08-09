@@ -8,9 +8,9 @@ export interface CartItem {
   id: number
   productId: number
   name: string
-  description: string
+  description?: string
   price: number
-  image: string
+  image?: string
   quantity: number
   discount?: {
     percentage: number
@@ -118,139 +118,103 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
   const loadingRef = React.useRef(false)  // Load cart on mount - only once with cleanup
   useEffect(() => {
-    // Skip if we're on the server side
     if (typeof window === 'undefined') return
-    // Skip if already loading
-    if (loadingRef.current) return
-    
     let isMounted = true
-      const loadCart = async () => {
-      if (loadingRef.current) return
-        try {
-        loadingRef.current = true
+    const loadCart = async () => {
+      try {
         dispatch({ type: 'SET_LOADING', payload: true })
         const data = await apiFetch('/carrito')
-        if (isMounted) {
-          dispatch({ type: 'SET_ITEMS', payload: data as CartItem[] })
-        }} catch (error) {
+        if (!Array.isArray(data)) return
+        const mapped = data.map((d: any) => ({
+          id: d.id,
+          productId: d.productId,
+          name: d.name,
+          description: d.description,
+          price: Number(d.price ?? 0),
+          image: d.image,
+          quantity: Number(d.quantity ?? 1),
+        })) as CartItem[]
+        if (isMounted) dispatch({ type: 'SET_ITEMS', payload: mapped })
+      } catch (error) {
         console.error('Error loading cart:', error)
-        if (isMounted) {
-          dispatch({ type: 'SET_STATE', payload: { 
-            error: 'Error al cargar el carrito', 
-            loading: false 
-          }})
-        }
-      } finally {
-        loadingRef.current = false
+        if (isMounted) dispatch({ type: 'SET_STATE', payload: { error: 'Error al cargar el carrito', loading: false } })
       }
     }
-
     loadCart()
-    
-    return () => {
-      isMounted = false
-    }
+    return () => { isMounted = false }
   }, [])
+
   const refreshCart = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
       const data = await apiFetch('/carrito')
-      dispatch({ type: 'SET_ITEMS', payload: data as CartItem[] })
+      const mapped = Array.isArray(data) ? data.map((d: any) => ({
+        id: d.id,
+        productId: d.productId,
+        name: d.name,
+        description: d.description,
+        price: Number(d.price ?? 0),
+        image: d.image,
+        quantity: Number(d.quantity ?? 1),
+      })) as CartItem[] : []
+      dispatch({ type: 'SET_ITEMS', payload: mapped })
     } catch (error) {
       console.error('Error loading cart:', error)
-      dispatch({ type: 'SET_STATE', payload: { 
-        error: 'Error al cargar el carrito', 
-        loading: false 
-      }})
+      dispatch({ type: 'SET_STATE', payload: { error: 'Error al cargar el carrito', loading: false } })
     }
   }, [])
 
   const addToCart = useCallback(async (product: Product, quantity: number = 1) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
-      const cartItemDto = {
-        productId: product.id,
-        quantity: quantity
-      }
-
-      const response = await apiFetch('/carrito', {
+      const cartItemDto = { productId: product.id, quantity }
+      await apiFetch('/carrito', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartItemDto)
       })
-
-      // Instead of trying to construct the item locally, just refresh once
-      // This is still better than refreshing after every operation
-      const data = await apiFetch('/carrito')
-      dispatch({ type: 'SET_ITEMS', payload: data as CartItem[] })
-    } catch (error) {      console.error('Error adding to cart:', error)
-      dispatch({ type: 'SET_STATE', payload: { 
-        error: 'Error al agregar al carrito', 
-        loading: false 
-      }})
+      await refreshCart()
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      dispatch({ type: 'SET_STATE', payload: { error: 'Error al agregar al carrito', loading: false } })
     }
-  }, [])
+  }, [refreshCart])
 
   const removeFromCart = useCallback(async (itemId: number) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
-      await apiFetch(`/carrito/${itemId}`, {
-        method: 'DELETE'
-      })
-
-      // Update local state instead of reloading
+      await apiFetch(`/carrito/${itemId}`, { method: 'DELETE' })
       dispatch({ type: 'REMOVE_ITEM', payload: itemId })
     } catch (error) {
       console.error('Error removing from cart:', error)
-      dispatch({ type: 'SET_STATE', payload: {        error: 'Error al eliminar del carrito', 
-        loading: false 
-      }})
+      dispatch({ type: 'SET_STATE', payload: { error: 'Error al eliminar del carrito', loading: false } })
     }
   }, [])
 
   const updateQuantity = useCallback(async (itemId: number, quantity: number) => {
     if (quantity < 1) return
-
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
       await apiFetch(`/carrito/${itemId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ quantity })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quantity)
       })
-
-      // Update local state instead of reloading
       dispatch({ type: 'UPDATE_ITEM', payload: { id: itemId, quantity } })
     } catch (error) {
       console.error('Error updating quantity:', error)
-      dispatch({ type: 'SET_STATE', payload: { 
-        error: 'Error al actualizar cantidad',        loading: false 
-      }})
+      dispatch({ type: 'SET_STATE', payload: { error: 'Error al actualizar cantidad', loading: false } })
     }
   }, [])
 
   const clearCart = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      
-      await apiFetch('/carrito/clear', {
-        method: 'DELETE'
-      })
-
-      // Clear cart locally
+      await apiFetch('/carrito/clear', { method: 'DELETE' })
       dispatch({ type: 'CLEAR_ITEMS' })
     } catch (error) {
       console.error('Error clearing cart:', error)
-      dispatch({ type: 'SET_STATE', payload: { 
-        error: 'Error al vaciar el carrito', 
-        loading: false      }})
+      dispatch({ type: 'SET_STATE', payload: { error: 'Error al vaciar el carrito', loading: false } })
     }
   }, [])
 

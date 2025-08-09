@@ -7,66 +7,55 @@ namespace Pluxy3dBE.Repository.Data;
 
 public partial class AppDbContextFromDb : DbContext
 {
-    public AppDbContextFromDb()
-    {
-    }
+    public AppDbContextFromDb() { }
 
     public AppDbContextFromDb(DbContextOptions<AppDbContextFromDb> options)
-        : base(options)
-    {
-    }
+        : base(options) { }
 
     public virtual DbSet<Carrito> Carritos { get; set; }
-
     public virtual DbSet<CarritoItem> CarritoItems { get; set; }
-
     public virtual DbSet<CategoriasProducto> CategoriasProductos { get; set; }
-
     public virtual DbSet<ComponentesPersonalizable> ComponentesPersonalizables { get; set; }
-
     public virtual DbSet<ConsultasContacto> ConsultasContactos { get; set; }
-
     public virtual DbSet<DetalleVentum> DetalleVenta { get; set; }
-
     public virtual DbSet<DireccionesUsuario> DireccionesUsuarios { get; set; }
-
     public virtual DbSet<EstadosVentum> EstadosVenta { get; set; }
-
     public virtual DbSet<FavoritosUsuario> FavoritosUsuarios { get; set; }
-
     public virtual DbSet<HistorialNavegacion> HistorialNavegacions { get; set; }
-
     public virtual DbSet<ImpresorasPersonalizada> ImpresorasPersonalizadas { get; set; }
-
     public virtual DbSet<LogsIum> LogsIa { get; set; }
-
     public virtual DbSet<MediosPago> MediosPagos { get; set; }
-
     public virtual DbSet<MensajesTicket> MensajesTickets { get; set; }
-
     public virtual DbSet<NewsletterSuscripcione> NewsletterSuscripciones { get; set; }
-
     public virtual DbSet<OpcionesComponente> OpcionesComponentes { get; set; }
-
     public virtual DbSet<Pago> Pagos { get; set; }
-
     public virtual DbSet<Producto> Productos { get; set; }
-
     public virtual DbSet<ResenasProducto> ResenasProductos { get; set; }
-
     public virtual DbSet<RespuestasIum> RespuestasIa { get; set; }
-
     public virtual DbSet<Role> Roles { get; set; }
-
     public virtual DbSet<TicketsSoporte> TicketsSoportes { get; set; }
-
     public virtual DbSet<Usuario> Usuarios { get; set; }
-
     public virtual DbSet<Venta> Ventas { get; set; }
+    public virtual DbSet<SimpleCartItem> SimpleCartItems { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=TUCHOPC\\SQLEXPRESS;Database=Pluxy3dDB;Trusted_Connection=True;TrustServerCertificate=True;");
+    {
+        if (optionsBuilder.IsConfigured) return;
+
+        var cs = Environment.GetEnvironmentVariable("DATABASE_CONNECTION")
+                 ?? "Data Source=pluxy3dbe.db";
+
+        // Choose provider by inspecting connection string
+        if (cs.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) &&
+            !cs.Contains("Server=", StringComparison.OrdinalIgnoreCase))
+        {
+            optionsBuilder.UseSqlite(cs);
+        }
+        else
+        {
+            optionsBuilder.UseSqlServer(cs);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -631,6 +620,16 @@ public partial class AppDbContextFromDb : DbContext
             entity.HasOne(d => d.Usuario).WithMany(p => p.Venta)
                 .HasForeignKey(d => d.UsuarioId)
                 .HasConstraintName("FK__ventas__usuario___5DCAEF64");
+        });
+
+        modelBuilder.Entity<SimpleCartItem>(entity =>
+        {
+            entity.ToTable("simple_cart_items");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ProductId).HasColumnName("producto_id");
+            entity.Property(e => e.Quantity).HasColumnName("cantidad");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasColumnType("datetime");
         });
 
         OnModelCreatingPartial(modelBuilder);

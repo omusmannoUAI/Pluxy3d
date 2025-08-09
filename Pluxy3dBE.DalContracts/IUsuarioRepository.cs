@@ -36,4 +36,14 @@ public interface IUsuarioRepository : IRepository<Usuario>
     /// Actualiza la contraseña de un usuario
     /// </summary>
     Task<bool> UpdatePasswordAsync(int usuarioId, string passwordHash, string salt);
+    
+    /// <summary>
+    /// Obtiene un usuario por ID usando Guid
+    /// </summary>
+    Task<Usuario?> GetByUsuarioIdAsync(Guid usuarioId);
+    
+    /// <summary>
+    /// Obtiene usuarios por rol
+    /// </summary>
+    Task<IEnumerable<Usuario>> GetByRoleAsync(int roleId);
 }

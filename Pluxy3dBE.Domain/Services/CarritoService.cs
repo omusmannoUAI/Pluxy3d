@@ -55,7 +55,7 @@ public class CarritoService : ICarritoService
     public async Task<CarritoItemDto> AddItemToCarritoAsync(AddCarritoItemDto addItemDto)
     {
         // Validar que el producto existe
-        var producto = await _productoRepository.GetByIdAsync(addItemDto.ProductoId);
+        var producto = await _productoRepository.GetByIdAsync(addItemDto.ImpresoraId);
         if (producto == null)
             throw new ArgumentException("El producto no existe");
 
@@ -67,7 +67,7 @@ public class CarritoService : ICarritoService
 
         // Verificar si ya existe el item en el carrito
         var existingItem = await _carritoRepository.GetItemAsync(
-            addItemDto.ProductoId, 
+            addItemDto.ImpresoraId, 
             addItemDto.UsuarioId, 
             addItemDto.SessionId);
 
