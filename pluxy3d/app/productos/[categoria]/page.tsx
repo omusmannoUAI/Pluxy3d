@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { apiFetch } from "@/lib/api"
 import { useEffect, useState } from "react"
 import { ProductCard } from "@/components/shared/ProductCard"
@@ -12,6 +12,7 @@ import { slugify } from "@/lib/helpers"
 
 export default function ProductosCategoriaPage() {
   const params = useParams();
+  const router = useRouter();
   const categoria = params.categoria as string;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,13 @@ export default function ProductosCategoriaPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([categoria]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<[number]>([500000]);
+
+  // If this dynamic segment is actually a numeric ID, redirect to product detail
+  useEffect(() => {
+    if (/^\d+$/.test(categoria)) {
+      router.replace(`/producto/${categoria}`)
+    }
+  }, [categoria, router])
 
   useEffect(() => {
     apiFetch("/productos")

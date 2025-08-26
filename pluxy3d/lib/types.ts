@@ -4,8 +4,12 @@ export interface Product {
   description: string
   price: number
   image: string
+  images?: string[]
   category: string
   brand: string
+  rating?: number
+  reviewsCount?: number
+  stock?: 'in_stock' | 'out_of_stock'
   discount?: {
     percentage: number
     originalPrice: number

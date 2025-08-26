@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 
 type Settings = {
   general: any
@@ -41,6 +42,10 @@ export default function AdminConfigPage() {
   const [settings, setSettings] = React.useState<Settings | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
+  const { toast } = useToast()
+
+  const isEmail = (s: string) => /.+@.+\..+/.test(s)
+  const inRange = (n: number, min: number, max: number) => Number.isFinite(n) && n >= min && n <= max
 
   React.useEffect(() => {
     let disposed = false
@@ -57,10 +62,127 @@ export default function AdminConfigPage() {
 
   const save = async (partial: Partial<Settings>) => {
     setSaving(true)
-    const next = { ...(settings as any), ...partial }
+    const prev = settings as Settings
+    const next = { ...prev, ...partial }
     setSettings(next)
-    await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(partial) })
-    setSaving(false)
+    try {
+      const res = await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(partial) })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setSettings(json)
+    } catch (e: any) {
+      setSettings(prev)
+      throw e
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveGeneral = async () => {
+    const g = settings!.general
+    if (!inRange(Number(g.taxRate), 0, 100)) {
+      toast({ title: "Impuesto inválido", description: "La tasa debe estar entre 0 y 100.", variant: "destructive" })
+      return
+    }
+    if (!isEmail(String(g.contactEmail || ""))) {
+      toast({ title: "Email inválido", description: "Ingresá un email de contacto válido.", variant: "destructive" })
+      return
+    }
+    try {
+      await save({ general: g })
+      toast({ title: "General guardado", description: "La configuración general se guardó correctamente." })
+    } catch {
+      toast({ title: "Error al guardar", description: "No pudimos guardar la configuración general.", variant: "destructive" })
+    }
+  }
+
+  const handleSavePayments = async () => {
+    const p = settings!.payments
+    if (p.mercadoPago.enabled && (!p.mercadoPago.publicKey || !p.mercadoPago.accessToken)) {
+      toast({ title: "Mercado Pago incompleto", description: "Public Key y Access Token son requeridos.", variant: "destructive" })
+      return
+    }
+    if (p.stripe.enabled && (!p.stripe.publicKey || !p.stripe.secretKey)) {
+      toast({ title: "Stripe incompleto", description: "Public y Secret Key son requeridos.", variant: "destructive" })
+      return
+    }
+    if (!inRange(Number(p.cashOnDelivery.fee || 0), 0, Number.POSITIVE_INFINITY)) {
+      toast({ title: "Recargo inválido", description: "El recargo debe ser 0 o mayor.", variant: "destructive" })
+      return
+    }
+    try {
+      await save({ payments: p })
+      toast({ title: "Pagos guardados", description: "Métodos de pago actualizados." })
+    } catch {
+      toast({ title: "Error al guardar", description: "No pudimos guardar los pagos.", variant: "destructive" })
+    }
+  }
+
+  const handleSaveShipping = async () => {
+    const s = settings!.shipping
+    if (!s.provider) {
+      toast({ title: "Proveedor requerido", description: "Indicá un proveedor de envíos.", variant: "destructive" })
+      return
+    }
+    if (!inRange(Number(s.flatRate || 0), 0, Number.POSITIVE_INFINITY)) {
+      toast({ title: "Tarifa inválida", description: "La tarifa plana debe ser 0 o mayor.", variant: "destructive" })
+      return
+    }
+    if (!inRange(Number(s.freeThreshold || 0), 0, Number.POSITIVE_INFINITY)) {
+      toast({ title: "Mínimo de envío gratis inválido", description: "El monto debe ser 0 o mayor.", variant: "destructive" })
+      return
+    }
+    const badZone = s.zones.find((z) => !z.name || !inRange(Number(z.rate || 0), 0, Number.POSITIVE_INFINITY))
+    if (badZone) {
+      toast({ title: "Zona inválida", description: "Cada zona debe tener nombre y tarifa >= 0.", variant: "destructive" })
+      return
+    }
+    try {
+      await save({ shipping: s })
+      toast({ title: "Envíos guardados", description: "Configuración de envíos actualizada." })
+    } catch {
+      toast({ title: "Error al guardar", description: "No pudimos guardar envíos.", variant: "destructive" })
+    }
+  }
+
+  const handleSaveSecurity = async () => {
+    const s = settings!.security
+    if (!inRange(Number(s.passwordMinLength || 0), 6, 256)) {
+      toast({ title: "Contraseña muy corta", description: "Definí un mínimo de 6 caracteres o más.", variant: "destructive" })
+      return
+    }
+    if (!inRange(Number(s.sessionTimeoutMinutes || 0), 5, 1440)) {
+      toast({ title: "Timeout inválido", description: "Definí entre 5 y 1440 minutos.", variant: "destructive" })
+      return
+    }
+    try {
+      await save({ security: s })
+      toast({ title: "Seguridad guardada", description: "Parámetros de seguridad actualizados." })
+    } catch {
+      toast({ title: "Error al guardar", description: "No pudimos guardar seguridad.", variant: "destructive" })
+    }
+  }
+
+  const handleSaveNotifications = async () => {
+    const n = settings!.notifications
+    if (!n.smtp.host) {
+      toast({ title: "SMTP host requerido", description: "Ingresá el host SMTP.", variant: "destructive" })
+      return
+    }
+    if (!inRange(Number(n.smtp.port || 0), 1, 65535)) {
+      toast({ title: "Puerto inválido", description: "Usá un puerto entre 1 y 65535.", variant: "destructive" })
+      return
+    }
+    if (!isEmail(String(n.smtp.from || ""))) {
+      toast({ title: "Remitente inválido", description: "Ingresá un email válido en From.", variant: "destructive" })
+      return
+    }
+    try {
+      await save({ notifications: n })
+      toast({ title: "Notificaciones guardadas", description: "SMTP y plantillas actualizadas." })
+    } catch {
+      toast({ title: "Error al guardar", description: "No pudimos guardar notificaciones.", variant: "destructive" })
+    }
   }
 
   if (loading || !settings) {
@@ -127,7 +249,7 @@ export default function AdminConfigPage() {
                   <div className="flex items-center justify-between"><span>Modo Mantenimiento</span><Switch checked={Boolean(settings.general.security?.maintenanceMode)} onCheckedChange={(c) => setSettings({ ...settings, general: { ...settings.general, security: { ...settings.general.security, maintenanceMode: Boolean(c) } } })} /></div>
                 </div>
               </div>
-              <Button className="mt-2" onClick={() => save({ general: settings.general })} disabled={saving}>
+              <Button className="mt-2" onClick={handleSaveGeneral} disabled={saving}>
                 {saving ? "Guardando..." : "Guardar Configuración"}
               </Button>
             </CardContent>
@@ -140,7 +262,7 @@ export default function AdminConfigPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Mercado Pago */}
-              <div className="space-y-2">
+      <div className="space-y-2">
                 <Label className="font-semibold">Mercado Pago</Label>
                 <div className="flex items-center justify-between"><span>Habilitado</span><Switch checked={settings.payments.mercadoPago.enabled} onCheckedChange={(c) => setSettings({ ...settings, payments: { ...settings.payments, mercadoPago: { ...settings.payments.mercadoPago, enabled: Boolean(c) } } })} /></div>
                 <div className="grid md:grid-cols-2 gap-3">
@@ -150,7 +272,7 @@ export default function AdminConfigPage() {
                   </div>
                   <div>
                     <Label>Access Token</Label>
-                    <Input value={settings.payments.mercadoPago.accessToken} onChange={(e) => setSettings({ ...settings, payments: { ...settings.payments, mercadoPago: { ...settings.payments.mercadoPago, accessToken: e.target.value } } })} />
+        <Input type="password" autoComplete="current-password" value={settings.payments.mercadoPago.accessToken} onChange={(e) => setSettings({ ...settings, payments: { ...settings.payments, mercadoPago: { ...settings.payments.mercadoPago, accessToken: e.target.value } } })} />
                   </div>
                 </div>
               </div>
@@ -165,7 +287,7 @@ export default function AdminConfigPage() {
                   </div>
                   <div>
                     <Label>Secret Key</Label>
-                    <Input value={settings.payments.stripe.secretKey} onChange={(e) => setSettings({ ...settings, payments: { ...settings.payments, stripe: { ...settings.payments.stripe, secretKey: e.target.value } } })} />
+                    <Input type="password" autoComplete="current-password" value={settings.payments.stripe.secretKey} onChange={(e) => setSettings({ ...settings, payments: { ...settings.payments, stripe: { ...settings.payments.stripe, secretKey: e.target.value } } })} />
                   </div>
                 </div>
               </div>
@@ -187,7 +309,7 @@ export default function AdminConfigPage() {
                   <Input type="number" value={settings.payments.cashOnDelivery.fee} onChange={(e) => setSettings({ ...settings, payments: { ...settings.payments, cashOnDelivery: { ...settings.payments.cashOnDelivery, fee: Number(e.target.value) } } })} />
                 </div>
               </div>
-              <Button onClick={() => save({ payments: settings.payments })} disabled={saving}>{saving ? "Guardando..." : "Guardar Pagos"}</Button>
+              <Button onClick={handleSavePayments} disabled={saving}>{saving ? "Guardando..." : "Guardar Pagos"}</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -257,7 +379,7 @@ export default function AdminConfigPage() {
                 </div>
                 <div>
                   <Label>Timeout de sesión (min)</Label>
-                  <Input type="number" value={settings.security.sessionTimeoutMinutes} onChange={(e) => setSettings({ ...settings, security: { ...settings.security, sessionTimeoutMinutes: Number(e.target.value) } })} />
+          <Input type="number" min={5} max={1440} value={settings.security.sessionTimeoutMinutes} onChange={(e) => setSettings({ ...settings, security: { ...settings.security, sessionTimeoutMinutes: Number(e.target.value) } })} />
                 </div>
                 <div>
                   <Label>reCAPTCHA Site Key</Label>
@@ -265,10 +387,10 @@ export default function AdminConfigPage() {
                 </div>
                 <div>
                   <Label>reCAPTCHA Secret Key</Label>
-                  <Input value={settings.security.recaptchaSecretKey} onChange={(e) => setSettings({ ...settings, security: { ...settings.security, recaptchaSecretKey: e.target.value } })} />
+          <Input type="password" autoComplete="current-password" value={settings.security.recaptchaSecretKey} onChange={(e) => setSettings({ ...settings, security: { ...settings.security, recaptchaSecretKey: e.target.value } })} />
                 </div>
               </div>
-              <Button onClick={() => save({ security: settings.security })} disabled={saving}>{saving ? "Guardando..." : "Guardar Seguridad"}</Button>
+        <Button onClick={handleSaveSecurity} disabled={saving}>{saving ? "Guardando..." : "Guardar Seguridad"}</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -285,7 +407,7 @@ export default function AdminConfigPage() {
                 </div>
                 <div>
                   <Label>SMTP Port</Label>
-                  <Input type="number" value={settings.notifications.smtp.port} onChange={(e) => setSettings({ ...settings, notifications: { ...settings.notifications, smtp: { ...settings.notifications.smtp, port: Number(e.target.value) } } })} />
+                  <Input type="number" min={1} max={65535} value={settings.notifications.smtp.port} onChange={(e) => setSettings({ ...settings, notifications: { ...settings.notifications, smtp: { ...settings.notifications.smtp, port: Number(e.target.value) } } })} />
                 </div>
                 <div>
                   <Label>SMTP User</Label>
@@ -293,7 +415,7 @@ export default function AdminConfigPage() {
                 </div>
                 <div>
                   <Label>SMTP Pass</Label>
-                  <Input value={settings.notifications.smtp.pass} onChange={(e) => setSettings({ ...settings, notifications: { ...settings.notifications, smtp: { ...settings.notifications.smtp, pass: e.target.value } } })} />
+                  <Input type="password" autoComplete="current-password" value={settings.notifications.smtp.pass} onChange={(e) => setSettings({ ...settings, notifications: { ...settings.notifications, smtp: { ...settings.notifications.smtp, pass: e.target.value } } })} />
                 </div>
                 <div className="md:col-span-2">
                   <Label>From</Label>
@@ -309,7 +431,7 @@ export default function AdminConfigPage() {
                   </div>
                 ))}
               </div>
-              <Button onClick={() => save({ notifications: settings.notifications })} disabled={saving}>{saving ? "Guardando..." : "Guardar Notificaciones"}</Button>
+              <Button onClick={handleSaveNotifications} disabled={saving}>{saving ? "Guardando..." : "Guardar Notificaciones"}</Button>
             </CardContent>
           </Card>
         </TabsContent>

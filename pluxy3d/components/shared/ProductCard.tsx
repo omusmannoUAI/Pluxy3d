@@ -96,8 +96,9 @@ export function ProductCard({
       
       <CardFooter className="flex justify-between">
         <Button variant="outline" asChild>
-          <Link href={`/productos/${product.id}`}>Ver Detalles</Link>
-        </Button>        <Button 
+          <Link href={`/productos/id/${product.id}`}>Ver Detalles</Link>
+        </Button>
+        <Button 
           variant="purple"
           onClick={handleAddToCart}
           disabled={isAdding}

@@ -1,4 +1,4 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5299/api';
+export const API_URL = 'http://localhost:5299/api';
 
 // Simple in-flight dedupe to avoid double fetches for the same request
 const inFlight = new Map<string, Promise<any>>();

@@ -1,0 +1,112 @@
+"use client"
+
+import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
+import { apiFetch } from "@/lib/api"
+
+type CatKey = "impresoras" | "componentes" | "filamentos" | "accesorios"
+
+const baseCats: Array<{ key: CatKey; href: string; title: string; desc: string }> = [
+  { key: "impresoras", href: "/productos/impresoras", title: "Impresoras 3D", desc: "Desde principiantes hasta profesionales" },
+  { key: "componentes", href: "/productos/componentes", title: "Componentes", desc: "Repuestos y mejoras para tu impresora" },
+  { key: "filamentos", href: "/productos/filamentos", title: "Filamentos", desc: "Materiales de alta calidad" },
+  { key: "accesorios", href: "/productos/accesorios", title: "Accesorios", desc: "Todo lo que necesitas para imprimir" },
+]
+
+function norm(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+export default function CategoriesGrid() {
+  const [counts, setCounts] = useState<Record<CatKey, number | null>>({
+    impresoras: null,
+    componentes: null,
+    filamentos: null,
+    accesorios: null,
+  })
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        // Try categories endpoint first
+        const cats = await apiFetch('/categorias')
+        let next: Record<CatKey, number | null> = { impresoras: null, componentes: null, filamentos: null, accesorios: null }
+        if (Array.isArray(cats)) {
+          for (const c of cats) {
+            const name = norm(String(c.name ?? c.label ?? ""))
+            const count = Number(c.count ?? 0)
+            if (name.includes("impresora")) next.impresoras = count
+            else if (name.includes("componente") || name.includes("repuesto")) next.componentes = count
+            else if (name.includes("filamento")) next.filamentos = count
+            else if (name.includes("accesorio")) next.accesorios = count
+          }
+        }
+
+        // If some are still null, try to infer from products
+        if (Object.values(next).some(v => v === null)) {
+          const prods = await apiFetch('/productos')
+          if (Array.isArray(prods)) {
+            const agg: Record<CatKey, number> = { impresoras: 0, componentes: 0, filamentos: 0, accesorios: 0 }
+            for (const p of prods) {
+              const cat = norm(String(p.category ?? p.categoria ?? ""))
+              if (cat.includes("impresora")) agg.impresoras++
+              else if (cat.includes("componente") || cat.includes("repuesto") || cat.includes("mejora")) agg.componentes++
+              else if (cat.includes("filamento")) agg.filamentos++
+              else if (cat.includes("accesorio")) agg.accesorios++
+            }
+            // Fill only missing values
+            for (const key of Object.keys(next) as CatKey[]) {
+              if (next[key] == null) next[key] = agg[key]
+            }
+          }
+        }
+
+        if (!cancelled) setCounts(next)
+      } catch {
+        if (!cancelled) {
+          // Leave as nulls; UI will show placeholders
+          setCounts({ impresoras: null, componentes: null, filamentos: null, accesorios: null })
+        }
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const items = useMemo(() => baseCats.map(c => ({ ...c, count: counts[c.key] })), [counts])
+
+  return (
+    <section className="container mx-auto w-full py-10 md:py-12">
+      <div className="text-center mb-8 md:mb-10">
+        <h2 className="text-3xl font-bold">Explora por Categorías</h2>
+        <p className="text-muted-foreground mt-2">Encuentra exactamente lo que necesitas navegando por nuestras categorías especializadas</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {items.map((c) => (
+          <Link key={c.title} href={c.href} className="rounded-lg overflow-hidden border bg-card hover:shadow-md transition-shadow">
+            <div className="w-full h-36 bg-muted" aria-label={c.title} />
+            <div className="p-4">
+              <div className="font-semibold">{c.title}</div>
+              <div className="text-xs text-muted-foreground">
+                {c.count == null ? (
+                  <span className="inline-block h-3 w-16 rounded bg-muted animate-pulse align-middle" aria-label="Cargando" />
+                ) : (
+                  <>{c.count} productos</>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground mt-2">{c.desc}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+  </section>
+  )
+}

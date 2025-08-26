@@ -8,12 +8,13 @@ import { ProductFilters } from "@/components/shared/ProductFilters"
 import { ProductGridLoading, ErrorState } from "@/components/shared/LoadingStates"
 import { Product } from "@/lib/types"
 import { slugify } from "@/lib/helpers"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 
 export default function ProductosPorMarcaPage() {
 	const params = useParams();
 	const categoria = params.categoria as string;
 	const marca = params.marca as string;
+	const router = useRouter();
 
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -23,6 +24,13 @@ export default function ProductosPorMarcaPage() {
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([categoria]);
 	const [selectedBrands, setSelectedBrands] = useState<string[]>([marca]);
 	const [priceRange, setPriceRange] = useState<[number]>([500000]);
+
+		// If this route is actually the product detail alias (/productos/id/[id]), redirect to the detail page
+	useEffect(() => {
+		if (categoria === 'id' && /^\d+$/.test(marca)) {
+				router.replace(`/producto/${marca}`)
+		}
+	}, [categoria, marca, router])
 
 	useEffect(() => {
 		apiFetch("/productos")
