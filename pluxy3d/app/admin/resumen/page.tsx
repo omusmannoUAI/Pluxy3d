@@ -1,18 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-} from "recharts"
+import dynamic from "next/dynamic"
 
 const monthlyData = [
   { month: "Ene", ventas: 15420000, ordenes: 320 },
@@ -50,6 +39,14 @@ function Stat({ title, value, subtitle }: { title: string; value: string; subtit
 }
 
 export default function AdminResumenPage() {
+  const MonthlySalesChart = dynamic(() => import("@/components/charts/MonthlySalesChart"), {
+    ssr: false,
+    loading: () => <div className="h-64 animate-pulse rounded bg-muted" />,
+  })
+  const MonthlyOrdersChart = dynamic(() => import("@/components/charts/MonthlyOrdersChart"), {
+    ssr: false,
+    loading: () => <div className="h-64 animate-pulse rounded bg-muted" />,
+  })
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -57,6 +54,12 @@ export default function AdminResumenPage() {
         <Stat title="Total Pedidos" value="3,891" subtitle="+8% desde el mes pasado" />
         <Stat title="Ingresos Totales" value="$15,420,000" subtitle="+23% desde el mes pasado" />
         <Stat title="Productos" value="156" subtitle="12 con stock bajo" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Stat title="Categorías" value="8" subtitle="Categorías activas" />
+        <Stat title="Cupones" value="25" subtitle="5 activos" />
+        <Stat title="Reseñas" value="892" subtitle="15 pendientes" />
+        <Stat title="Newsletter" value="2341" subtitle="Suscriptores activos" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -66,16 +69,7 @@ export default function AdminResumenPage() {
           </CardHeader>
           <CardContent>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={compactFmt} />
-                  <Tooltip formatter={(v: number) => moneyFmt(v)} />
-                  <Legend />
-                  <Line type="monotone" dataKey="ventas" name="Ventas" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+              <MonthlySalesChart data={monthlyData} />
             </div>
           </CardContent>
         </Card>
@@ -85,16 +79,7 @@ export default function AdminResumenPage() {
           </CardHeader>
           <CardContent>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis tickFormatter={(v: number) => new Intl.NumberFormat("es-AR").format(v)} />
-                  <Tooltip formatter={(v: number) => new Intl.NumberFormat("es-AR").format(v)} />
-                  <Legend />
-                  <Bar dataKey="ordenes" name="Órdenes" fill="#c084fc" />
-                </BarChart>
-              </ResponsiveContainer>
+              <MonthlyOrdersChart data={monthlyData} />
             </div>
           </CardContent>
         </Card>
