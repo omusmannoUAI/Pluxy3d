@@ -11,12 +11,51 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Printer, Wrench, Palette } from "lucide-react"
 import Image from "next/image"
 import { OrderSummary } from "@/components/shared/OrderSummary"
+import { useCart } from "@/contexts/CartContext"
+import { useRouter } from "next/navigation"
 
 export default function PersonalizacionPage() {
   const [selectedPrinter, setSelectedPrinter] = useState<string | null>(null)
   const [selectedExtruder, setSelectedExtruder] = useState<string | null>(null)
   const [selectedBuildPlate, setSelectedBuildPlate] = useState<string | null>(null)
   const [totalPrice, setTotalPrice] = useState(320000)
+  const [activeTab, setActiveTab] = useState<"printer" | "components" | "appearance">("printer")
+  const { addCustomItem } = useCart()
+  const router = useRouter()
+
+  // Apariencia y extras
+  const [appearance, setAppearance] = useState({
+    color: "black" as "black" | "blue" | "red" | "purple",
+    led: false,
+    ledType: "white" as "white" | "rgb",
+    logo: false,
+    accessories: {
+      toolkit: false,
+      nozzles: false,
+      filamentSample: false,
+    },
+  })
+
+  const extrasCatalog = {
+    color: 5000,
+    led: 3500,
+    ledRgbExtra: 1500,
+    logo: 2000,
+    toolkit: 4500,
+    nozzles: 3000,
+    filamentSample: 5000,
+  }
+
+  const computeExtrasPrice = () => {
+    let sum = 0
+    if (appearance.color !== "black") sum += extrasCatalog.color
+    if (appearance.led) sum += extrasCatalog.led + (appearance.ledType === "rgb" ? extrasCatalog.ledRgbExtra : 0)
+    if (appearance.logo) sum += extrasCatalog.logo
+    if (appearance.accessories.toolkit) sum += extrasCatalog.toolkit
+    if (appearance.accessories.nozzles) sum += extrasCatalog.nozzles
+    if (appearance.accessories.filamentSample) sum += extrasCatalog.filamentSample
+    return sum
+  }
 
   const handlePrinterSelect = (printer: string) => {
     setSelectedPrinter(printer)
@@ -93,7 +132,7 @@ export default function PersonalizacionPage() {
   }
 
   // Prepare order items for OrderSummary
-  const orderItems = [];
+  const orderItems: { id: string; name: string; price: number; quantity?: number }[] = [];
   if (selectedPrinter) {
     const printerName = selectedPrinter === "ender3-v2" ? "Creality Ender 3 V2" : "Creality Ender 3";
     const printerPrice = selectedPrinter === "ender3-v2" ? 320000 : 280000;
@@ -110,13 +149,38 @@ export default function PersonalizacionPage() {
     orderItems.push({ id: selectedBuildPlate, name: plateName, price: platePrice, quantity: 1 });
   }
 
+  // Add extras to order summary
+  if (appearance.color !== "black") orderItems.push({ id: "color", name: `Color ${appearance.color.toUpperCase()}`, price: extrasCatalog.color })
+  if (appearance.led) {
+    orderItems.push({ id: "led", name: `Iluminación LED (${appearance.ledType === 'rgb' ? 'RGB' : 'Blanco'})`, price: extrasCatalog.led + (appearance.ledType === 'rgb' ? extrasCatalog.ledRgbExtra : 0) })
+  }
+  if (appearance.logo) orderItems.push({ id: "logo", name: "Logo Personalizado", price: extrasCatalog.logo })
+  if (appearance.accessories.toolkit) orderItems.push({ id: "toolkit", name: "Kit de Herramientas", price: extrasCatalog.toolkit })
+  if (appearance.accessories.nozzles) orderItems.push({ id: "nozzles", name: "Set de Boquillas de Repuesto", price: extrasCatalog.nozzles })
+  if (appearance.accessories.filamentSample) orderItems.push({ id: "filament", name: "Muestras de Filamento PLA", price: extrasCatalog.filamentSample })
+
+  const orderTotal = orderItems.reduce((acc, it) => acc + it.price * (it.quantity ?? 1), 0)
+
+  const addBuildToCart = () => {
+    const summary = orderItems.map(i => i.name).join(" + ")
+    const name = selectedPrinter ? `Build ${selectedPrinter.toUpperCase()}` : 'Build personalizado'
+    addCustomItem({
+      name,
+      description: summary,
+      price: orderTotal,
+      image: "/placeholder.svg",
+      quantity: 1,
+    })
+    router.push('/carrito')
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Personalización de Impresora</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <Tabs defaultValue="printer" className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="printer">
                 <Printer className="mr-2 h-4 w-4" />
@@ -215,7 +279,12 @@ export default function PersonalizacionPage() {
               </div>
 
               <div className="mt-6">
-                <Button variant="purple" className="w-full" disabled={!selectedPrinter}>
+                <Button
+                  variant="purple"
+                  className="w-full"
+                  disabled={!selectedPrinter}
+                  onClick={() => setActiveTab("components")}
+                >
                   Continuar a Componentes
                 </Button>
               </div>
@@ -377,7 +446,9 @@ export default function PersonalizacionPage() {
                 </div>
 
                 <div className="mt-6">
-                  <Button variant="purple" className="w-full">Continuar a Apariencia</Button>
+                  <Button variant="purple" className="w-full" onClick={() => setActiveTab("appearance")}>
+                    Continuar a Apariencia
+                  </Button>
                 </div>
               </div>
             </TabsContent>
@@ -393,7 +464,7 @@ export default function PersonalizacionPage() {
                   {/* Color Selection */}
                   <div className="space-y-4">
                     <Label>Color de la Estructura</Label>
-                    <RadioGroup defaultValue="black" className="flex flex-wrap gap-4">
+                    <RadioGroup value={appearance.color} onValueChange={(v) => setAppearance(a => ({ ...a, color: v as any }))} className="flex flex-wrap gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="black" id="black" />
                         <Label htmlFor="black" className="flex items-center">
@@ -428,11 +499,11 @@ export default function PersonalizacionPage() {
                   {/* LED Lighting */}
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="led-lighting" />
+                      <Checkbox id="led-lighting" checked={appearance.led} onCheckedChange={(v) => setAppearance(a => ({ ...a, led: Boolean(v) }))} />
                       <Label htmlFor="led-lighting">Iluminación LED (+$3.500)</Label>
                     </div>
                     <div className="pl-6">
-                      <RadioGroup defaultValue="white" className="flex flex-wrap gap-4">
+                      <RadioGroup value={appearance.ledType} onValueChange={(v) => setAppearance(a => ({ ...a, ledType: v as any }))} className="flex flex-wrap gap-4">
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="white" id="led-white" />
                           <Label htmlFor="led-white">Blanco</Label>
@@ -448,7 +519,7 @@ export default function PersonalizacionPage() {
                   {/* Custom Logo */}
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="custom-logo" />
+                      <Checkbox id="custom-logo" checked={appearance.logo} onCheckedChange={(v) => setAppearance(a => ({ ...a, logo: Boolean(v) }))} />
                       <Label htmlFor="custom-logo">Logo Personalizado (+$2.000)</Label>
                     </div>
                     <div className="pl-6">
@@ -462,22 +533,24 @@ export default function PersonalizacionPage() {
                     <Label>Accesorios Adicionales</Label>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="tool-kit" />
+                        <Checkbox id="tool-kit" checked={appearance.accessories.toolkit} onCheckedChange={(v) => setAppearance(a => ({ ...a, accessories: { ...a.accessories, toolkit: Boolean(v) } }))} />
                         <Label htmlFor="tool-kit">Kit de Herramientas (+$4.500)</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="spare-nozzles" />
+                        <Checkbox id="spare-nozzles" checked={appearance.accessories.nozzles} onCheckedChange={(v) => setAppearance(a => ({ ...a, accessories: { ...a.accessories, nozzles: Boolean(v) } }))} />
                         <Label htmlFor="spare-nozzles">Set de Boquillas de Repuesto (+$3.000)</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Checkbox id="filament-sample" />
+                        <Checkbox id="filament-sample" checked={appearance.accessories.filamentSample} onCheckedChange={(v) => setAppearance(a => ({ ...a, accessories: { ...a.accessories, filamentSample: Boolean(v) } }))} />
                         <Label htmlFor="filament-sample">Muestras de Filamento PLA (+$5.000)</Label>
                       </div>
                     </div>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="purple" className="w-full">Finalizar Personalización</Button>
+                  <Button variant="purple" className="w-full" onClick={addBuildToCart}>
+                    Finalizar Personalización
+                  </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -488,10 +561,10 @@ export default function PersonalizacionPage() {
         <div>
           <OrderSummary
             items={orderItems}
-            total={totalPrice}
+            total={orderTotal}
             showCheckoutButton={true}
             checkoutLabel="Agregar al Carrito"
-            onCheckout={() => {}}
+            onCheckout={addBuildToCart}
             className="sticky top-20"
           />
         </div>

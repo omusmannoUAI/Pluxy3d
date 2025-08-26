@@ -9,6 +9,8 @@ const featuredProducts = [
     description: "Impresora 3D de alta calidad para principiantes y profesionales.",
     price: 320000,
     image: "/ender3v2.webp?height=300&width=400",
+  category: "impresora",
+  brand: "Creality",
   },
   {
     id: 2,
@@ -16,6 +18,8 @@ const featuredProducts = [
     description: "Kit de mejora para tu impresora Ender 3 con extrusor, teflón y resortes.",
     price: 22750,
     image: "/kitmejora.webp?height=300&width=400",
+  category: "componente",
+  brand: "Creality",
   },
   {
     id: 3,
@@ -23,6 +27,8 @@ const featuredProducts = [
     description: "Sistema de doble tracción para mejorar la precisión de tus impresiones.",
     price: 19000,
     image: "/doble.webp?height=300&width=400",
+  category: "componente",
+  brand: "Creality",
   },
 ]
 

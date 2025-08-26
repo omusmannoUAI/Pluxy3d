@@ -8,7 +8,7 @@ import { Search } from "lucide-react"
 import { ProductCard } from "@/components/shared/ProductCard"
 import { Product } from "@/lib/types"
 import { ProductFilters } from "@/components/shared/ProductFilters"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { apiFetch } from "@/lib/api"
 
 export default function ProductosPage() {
@@ -17,40 +17,76 @@ export default function ProductosPage() {
   const [priceRange, setPriceRange] = useState<[number]>([500000])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [categories, setCategories] = useState<{ id: number; label: string; count?: number }[]>([])
+  const [activeTab, setActiveTab] = useState<string>("all")
+  const didInitialLoad = useRef(false)
 
   // Load products from backend
   useEffect(() => {
-    const loadProducts = async () => {
+    if (didInitialLoad.current) return
+    didInitialLoad.current = true
+    const loadInitial = async () => {
       try {
-        const data = await apiFetch('/productos')
-        if (!Array.isArray(data)) { setProducts([]); return }
-        const mappedProducts = data.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          description: p.description,
-          price: Number(p.price ?? 0),
-          image: p.image,
-          category: p.category,
-          brand: p.brand
-        })) as Product[]
-        setProducts(mappedProducts)
+        setLoading(true)
+        const [cats, prods] = await Promise.all([
+          apiFetch('/categorias'),
+          apiFetch('/productos')
+        ])
+        if (Array.isArray(cats)) {
+          setCategories(cats.map((c: any) => ({ id: c.id, label: c.name, count: c.count })))
+        }
+        if (Array.isArray(prods)) {
+          const mappedProducts = prods.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: Number(p.price ?? 0),
+            image: p.image,
+            category: p.category,
+            brand: p.brand
+          })) as Product[]
+          setProducts(mappedProducts)
+        } else {
+          setProducts([])
+        }
       } catch (error) {
-        console.error('Error loading products:', error)
+        console.error('Error loading initial data:', error)
       } finally {
         setLoading(false)
       }
     }
-
-    loadProducts()
+    loadInitial()
   }, [])
 
-  const categories = [
-    { id: "impresoras", label: "Impresoras 3D", count: 5 },
-    { id: "extrusores", label: "Extrusores", count: 3 },
-    { id: "hotend", label: "HotEnd", count: 4 },
-    { id: "placas", label: "Placas de Impresión", count: 2 },
-    { id: "resortes", label: "Resortes", count: 6 }
-  ]
+  useEffect(() => {
+    const loadByCategory = async () => {
+      if (activeTab === 'all') return
+      setLoading(true)
+      try {
+        const categoryId = Number(activeTab)
+        const data = await apiFetch(`/productos?categoryId=${categoryId}`)
+        if (Array.isArray(data)) {
+          const mapped = data.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: Number(p.price ?? 0),
+            image: p.image,
+            category: p.category,
+            brand: p.brand
+          })) as Product[]
+          setProducts(mapped)
+        }
+      } catch (e) {
+        console.error('Error loading category products:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadByCategory()
+  }, [activeTab])
+
+  // categories now loaded from backend
 
   const brands = [
     { id: "creality", label: "Creality", count: 8 },
@@ -77,7 +113,7 @@ export default function ProductosPage() {
         {/* Filters */}
         <div>
           <ProductFilters
-            categories={categories}
+            categories={categories.map(c => ({ id: String(c.id), label: c.label, count: c.count }))}
             brands={brands}
             selectedCategories={selectedCategories}
             selectedBrands={selectedBrands}
@@ -116,13 +152,12 @@ export default function ProductosPage() {
           </div>
 
           {/* Product Categories Tabs */}
-          <Tabs defaultValue="all" className="mb-6">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="w-full flex justify-start overflow-x-auto">
               <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="impresoras">Impresoras</TabsTrigger>
-              <TabsTrigger value="componentes">Componentes</TabsTrigger>
-              <TabsTrigger value="filamentos">Filamentos</TabsTrigger>
-              <TabsTrigger value="accesorios">Accesorios</TabsTrigger>
+              {categories.map(c => (
+                <TabsTrigger key={c.id} value={String(c.id)}>{c.label}</TabsTrigger>
+              ))}
             </TabsList>            <TabsContent value="all" className="mt-6">
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,45 +176,25 @@ export default function ProductosPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="impresoras" className="mt-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-64"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products
-                    .filter((product) => product.category === "impresora")
-                    .map((product) => (
+            {categories.map(c => (
+              <TabsContent key={c.id} value={String(c.id)} className="mt-6">
+                {loading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="bg-gray-200 rounded-lg h-64"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {products.map((product) => (
                       <ProductCard key={product.id} product={product} />
                     ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="componentes" className="mt-6">
-              {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="bg-gray-200 rounded-lg h-64"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products
-                    .filter((product) => product.category === "componente")
-                    .map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                </div>
-              )}
-            </TabsContent>
+                  </div>
+                )}
+              </TabsContent>
+            ))}
 
             <TabsContent value="filamentos" className="mt-6">
               <p className="text-center py-8 text-muted-foreground">No hay productos en esta categoría.</p>

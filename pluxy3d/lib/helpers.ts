@@ -20,10 +20,11 @@ export function formatPrice(price: number, currency: string = 'CLP', locale: str
  * Formats a price number to a simple string with thousands separator
  * @param price - The price to format
  */
-export function formatPriceSimple(price: number): string {
-  return `$${price.toLocaleString('en-US', { 
-    minimumFractionDigits: 0, 
-    maximumFractionDigits: 0 
+export function formatPriceSimple(price: number, locale: string = 'es-CL'): string {
+  // Deterministic thousands separator to avoid SSR/CSR mismatches
+  return `$${price.toLocaleString(locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`
 }
 

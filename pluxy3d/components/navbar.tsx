@@ -20,11 +20,13 @@ import { Search, ShoppingCart, User, Menu, X, Printer, Wrench, MessageSquare, He
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/contexts/CartContext"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { getTotalItems, items } = useCart()
   const cartItemCount = useMemo(() => getTotalItems(), [items, getTotalItems])
+  const { user } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,6 +72,13 @@ export default function Navbar() {
                       <span>Favoritos</span>
                     </Link>
                   </SheetClose>
+                  {user?.role === 'admin' && (
+                    <SheetClose asChild>
+                      <Link href="/admin/resumen" className="flex items-center gap-2 py-2 hover:text-purple-600">
+                        <span>Administración</span>
+                      </Link>
+                    </SheetClose>
+                  )}
                 </div>
               </div>
             </SheetContent>
@@ -141,6 +150,13 @@ export default function Navbar() {
                   <NavigationMenuLink className={navigationMenuTriggerStyle()}>Personalización</NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
+              {user?.role === 'admin' && (
+                <NavigationMenuItem>
+                  <Link href="/admin/resumen" legacyBehavior passHref>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Administración</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              )}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -173,7 +189,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          <Link href="/login">
+          <Link href={user ? "/perfil" : "/login"}>
             <Button variant="ghost" size="icon" aria-label="Cuenta">
               <User className="h-5 w-5" />
             </Button>

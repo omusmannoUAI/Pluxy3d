@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/shared/ProductCard"
 import { ProductFilters } from "@/components/shared/ProductFilters"
 import { ProductGridLoading, ErrorState } from "@/components/shared/LoadingStates"
 import { Product } from "@/lib/types"
+import { slugify } from "@/lib/helpers"
 
 export default function ProductosCategoriaPage() {
   const params = useParams();
@@ -32,10 +33,18 @@ export default function ProductosCategoriaPage() {
       });
   }, []);
 
-  const filteredProducts = products.filter((p) => p.category === categoria);
+  // Be tolerant with category variants (impresoras, componentes, etc.)
+  const filteredProducts = products.filter((p) => {
+    const catSlug = slugify(p.category || "");
+    const isPrinterSection = categoria.includes("impresor");
+    const isComponentsSection = categoria.includes("component");
+    if (isPrinterSection) return catSlug.includes("impresor");
+    if (isComponentsSection) return catSlug.includes("component");
+    return catSlug === categoria;
+  });
   // Get unique categories and brands
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)))
-    .map(cat => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }));
+    .map(cat => ({ id: slugify(cat as string), label: cat as string }));
   
   const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)))
     .map(brand => ({ id: brand, label: brand }));

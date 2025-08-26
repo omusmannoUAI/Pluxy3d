@@ -84,7 +84,7 @@ export default function CartPage() {
                         <p className="text-sm text-muted-foreground">{item.description}</p>                        <div className="flex items-center">
                           {item.discount && (
                             <span className="text-sm line-through text-muted-foreground mr-2">
-                              ${item.discount.originalPrice.toLocaleString()}
+                              {formatPriceSimple(item.discount.originalPrice)}
                             </span>
                           )}
                           <span className="font-bold">{formatPriceSimple(item.price)}</span>

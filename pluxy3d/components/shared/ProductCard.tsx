@@ -8,6 +8,7 @@ import Link from "next/link"
 import { useCart } from "@/contexts/CartContext"
 import { useState } from "react"
 import { Product } from "@/lib/types"
+import { formatPriceSimple } from "@/lib/helpers"
 
 interface ProductCardProps {
   product: Product
@@ -84,11 +85,11 @@ export function ProductCard({
         <div className="flex items-center gap-2">
           {product.discount && (
             <span className="text-sm line-through text-muted-foreground">
-              ${product.discount.originalPrice.toLocaleString()}
+              {formatPriceSimple(product.discount.originalPrice)}
             </span>
           )}
           <span className="text-xl font-bold">
-            ${product.price.toLocaleString()}
+            {formatPriceSimple(product.price)}
           </span>
         </div>
       </CardContent>

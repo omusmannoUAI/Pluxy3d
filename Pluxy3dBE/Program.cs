@@ -45,17 +45,32 @@ try
     // Configuración de base de datos - actualizada para usar Pluxy3dDB
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                           Environment.GetEnvironmentVariable("DATABASE_CONNECTION") ??
-                          "Server=TUCHOPC\\SQLEXPRESS;Database=Pluxy3dDB;Trusted_Connection=True;TrustServerCertificate=True;";
+                          "Server=TUCHO-PC\\SQLEXPRESS;Database=Pluxy3dDB;Trusted_Connection=True;TrustServerCertificate=True;";
 
     builder.Services.AddDbContextPool<AppDbContextFromDb>(options =>
-        options
-            .UseSqlServer(connectionString, sql =>
-            {
-                sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null);
-                sql.CommandTimeout(30);
-            })
-            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
-    );
+    {
+        // Detect provider from connection string (supports SQL Server and SQLite)
+        var cs = connectionString ?? string.Empty;
+        var isSQLite = cs.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
+                       && !cs.Contains("Server=", StringComparison.OrdinalIgnoreCase);
+
+        if (isSQLite)
+        {
+            options
+                .UseSqlite(cs)
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        }
+        else
+        {
+            options
+                .UseSqlServer(cs, sql =>
+                {
+                    sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null);
+                    sql.CommandTimeout(30);
+                })
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+        }
+    });
 
     builder.Services.AddScoped<IProductRepository, EfProductRepository>();
 
@@ -186,6 +201,20 @@ try
 
     // Endpoint raíz
     app.MapGet("/", () => "Pluxy3D Backend API está funcionando correctamente! 🚀");
+
+    // Asegurar creación de esquema cuando se usa SQLite (o DB vacía)
+    using (var scope = app.Services.CreateScope())
+    {
+        try
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContextFromDb>();
+            await db.Database.EnsureCreatedAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "No se pudo asegurar la creación del esquema de base de datos");
+        }
+    }
 
     // TEMPORAL: Seed comentado hasta regenerar entidades
     //await SeedDataAsync(app);

@@ -26,6 +26,7 @@ interface CartState {
 
 interface CartContextType extends CartState {
   addToCart: (product: Product, quantity?: number) => Promise<void>
+  addCustomItem: (args: { name: string; price: number; description?: string; quantity?: number; image?: string }) => void
   removeFromCart: (itemId: number) => Promise<void>
   updateQuantity: (itemId: number, quantity: number) => Promise<void>
   clearCart: () => Promise<void>
@@ -124,25 +125,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         dispatch({ type: 'SET_LOADING', payload: true })
         const data = await apiFetch('/carrito')
-        if (!Array.isArray(data)) return
-        const mapped = data.map((d: any) => ({
-          id: d.id,
-          productId: d.productId,
-          name: d.name,
-          description: d.description,
-          price: Number(d.price ?? 0),
-          image: d.image,
-          quantity: Number(d.quantity ?? 1),
-        })) as CartItem[]
-        if (isMounted) dispatch({ type: 'SET_ITEMS', payload: mapped })
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((d: any) => ({
+            id: d.id,
+            productId: d.productId,
+            name: d.name,
+            description: d.description,
+            price: Number(d.price ?? 0),
+            image: d.image,
+            quantity: Number(d.quantity ?? 1),
+          })) as CartItem[]
+          if (isMounted) dispatch({ type: 'SET_ITEMS', payload: mapped })
+        } else {
+          // Fallback a localStorage
+          const raw = window.localStorage.getItem('pluxy_cart')
+          const items = raw ? (JSON.parse(raw) as CartItem[]) : []
+          if (isMounted) dispatch({ type: 'SET_ITEMS', payload: items })
+        }
       } catch (error) {
         console.error('Error loading cart:', error)
-        if (isMounted) dispatch({ type: 'SET_STATE', payload: { error: 'Error al cargar el carrito', loading: false } })
+        // Fallback a localStorage si hay error
+        const raw = window.localStorage.getItem('pluxy_cart')
+        const items = raw ? (JSON.parse(raw) as CartItem[]) : []
+        if (isMounted) dispatch({ type: 'SET_ITEMS', payload: items })
       }
     }
     loadCart()
     return () => { isMounted = false }
   }, [])
+
+  // Persistencia local simple
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem('pluxy_cart', JSON.stringify(state.items))
+    } catch {}
+  }, [state.items])
 
   const refreshCart = useCallback(async () => {
     try {
@@ -229,6 +247,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value: CartContextType = {
     ...state,
     addToCart,
+    addCustomItem: ({ name, price, description, quantity = 1, image }) => {
+      // Genera IDs únicos locales (negativos para evitar colisiones con backend)
+      const id = Date.now() + Math.floor(Math.random() * 1000)
+      const productId = -id
+      const newItem: CartItem = {
+        id,
+        productId,
+        name,
+        description,
+        price,
+        image,
+        quantity,
+      }
+      dispatch({ type: 'ADD_ITEM', payload: newItem })
+    },
     removeFromCart,
     updateQuantity,
     clearCart,
