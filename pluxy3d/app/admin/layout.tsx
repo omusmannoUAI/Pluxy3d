@@ -16,6 +16,7 @@ const sections = [
   { slug: "categorias", label: "Categorías" },
   { slug: "cupones", label: "Cupones" },
   { slug: "resenas", label: "Reseñas" },
+  { slug: "mensajes", label: "Mensajes" },
   { slug: "soporte", label: "Soporte" },
   { slug: "contenido", label: "Contenido" },
   { slug: "config", label: "Config" },

@@ -16,7 +16,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
 import { cn } from "@/lib/utils"
-import { Search, ShoppingCart, User, Menu, X, Printer, Wrench, MessageSquare, Heart } from "lucide-react"
+import { Search, ShoppingCart, User, Menu, X, Printer, Wrench, MessageSquare, Heart, Info } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetTitle } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/contexts/CartContext"
@@ -64,6 +64,12 @@ export default function Navbar() {
                     <Link href="/soporte" className="flex items-center gap-2 py-2 hover:text-purple-600">
                       <MessageSquare className="h-5 w-5" />
                       <span>Soporte Técnico</span>
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link href="/nosotros" className="flex items-center gap-2 py-2 hover:text-purple-600">
+                      <Info className="h-5 w-5" />
+                      <span>Nosotros</span>
                     </Link>
                   </SheetClose>
                   <SheetClose asChild>
@@ -143,6 +149,11 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <Link href="/soporte" legacyBehavior passHref>
                   <NavigationMenuLink className={navigationMenuTriggerStyle()}>Soporte Técnico</NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link href="/nosotros" legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>Nosotros</NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
