@@ -50,7 +50,8 @@ export function ProductCard({
           <Image 
             src={product.image || "/placeholder.svg"} 
             alt={product.name} 
-            fill 
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover" 
           />
         </div>

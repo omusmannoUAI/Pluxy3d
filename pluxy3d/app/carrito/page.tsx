@@ -1,10 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
+import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, Input, Separator } from "@/components/ui"
 import { Trash2, Plus, Minus, ArrowRight } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -13,17 +10,17 @@ import { formatPriceSimple } from "@/lib/helpers"
 import { useCart } from "@/contexts/CartContext"
 
 export default function CartPage() {
-  const { 
-    items: cartItems, 
-    loading, 
-    error, 
-    updateQuantity, 
-    removeFromCart, 
-    clearCart, 
-    getTotalPrice 
+  const {
+    items: cartItems,
+    loading,
+    error,
+    updateQuantity,
+    removeFromCart,
+    clearCart,
+    getTotalPrice
   } = useCart()
 
-  const subtotal = getTotalPrice()
+  const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
   const discount = cartItems.reduce(
     (total, item) => total + (item.discount ? (item.discount.originalPrice - item.price) * item.quantity : 0),
     0,

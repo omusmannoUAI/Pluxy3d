@@ -29,10 +29,10 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ meto
   useEffect(() => {
     // Solo ejecutar una vez cuando el componente se monta
     if (hasCleared) return
-    
+
     // Primero intentar cargar desde localStorage
     const savedSummary = localStorage.getItem('lastPurchaseSummary')
-    
+
     if (items.length > 0) {
       // Hay items en el carrito, crear el resumen y guardarlo
       const productos = items.map(item => ({
@@ -40,12 +40,12 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ meto
         cantidad: item.quantity,
         precio: item.price
       }))
-      
-      const subtotal = getTotalPrice()
+
+      const subtotal = items.reduce((total, item) => total + (item.price * item.quantity), 0)
       const descuento = 0
       const envio = 0
       const total = subtotal - descuento + envio
-      
+
       const summary = {
         productos,
         subtotal,
@@ -53,11 +53,11 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ meto
         envio,
         total
       }
-      
+
       // Guardar en localStorage antes de limpiar
       localStorage.setItem('lastPurchaseSummary', JSON.stringify(summary))
       setPurchaseSummary(summary)
-      
+
       // Limpiar el carrito después de guardar el resumen
       clearCart().finally(() => setHasCleared(true))
     } else if (savedSummary) {
@@ -92,7 +92,7 @@ export default function CheckoutSuccessPage({ params }: { params: Promise<{ meto
         total: 0,
       })
       setHasCleared(true)    }
-  }, []) // Dependencias vacías para que solo se ejecute una vez
+  }, [items, hasCleared, clearCart]) // Agregar dependencias necesarias
   // Limpiar localStorage después de un tiempo
   useEffect(() => {
     const timer = setTimeout(() => {

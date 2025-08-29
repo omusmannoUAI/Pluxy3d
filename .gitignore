@@ -40,3 +40,4 @@ Thumbs.db
 # Ignorar lockfiles de otros gestores si no se usan
 package-lock.json
 yarn.lock
+Pluxy3dBE/logs/

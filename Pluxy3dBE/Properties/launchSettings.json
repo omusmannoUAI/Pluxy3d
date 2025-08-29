@@ -11,7 +11,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_URLS": "http://localhost:5299",
         "LOG_LEVEL": "Information",
-        "DATABASE_CONNECTION": "Server=TUCHO-PC\\SQLEXPRESS;Database=Pluxy3dDB;Trusted_Connection=True;TrustServerCertificate=True;",
+        "DATABASE_CONNECTION": "Data Source=pluxy3d.db;Cache=Shared",
         "ENABLE_SWAGGER": "true",
         "CORS_ORIGINS": "http://localhost:3000;https://localhost:3001"
       }

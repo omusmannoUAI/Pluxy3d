@@ -10,21 +10,21 @@ const slides = [
   {
     title: "Servicio Técnico Especializado",
     subtitle: "Diagnóstico, reparación y mantenimiento con repuestos originales.",
-    img: "/hellbot.png?height=900&width=1600",
+    img: "/hellbot.png",
     primary: { label: "Abrir Ticket", href: "/soporte" },
     secondary: { label: "Conocer servicio", href: "/soporte" },
   },
   {
     title: "Componentes y Repuestos",
     subtitle: "Mejorá tu impresora con extrusores, hotends, placas y más.",
-    img: "/kitmejora.webp?height=900&width=1600",
+    img: "/kitmejora.webp",
     primary: { label: "Ver Componentes", href: "/productos/componentes" },
     secondary: { label: "Soporte Técnico", href: "/soporte" },
   },
   {
     title: "Impresoras 3D de Alta Calidad",
     subtitle: "Desde tu primera Ender hasta equipos listos para producción.",
-    img: "/ender3v2.webp?height=900&width=1600",
+    img: "/ender3v2.webp",
     primary: { label: "Ver Impresoras", href: "/productos/impresoras" },
     secondary: { label: "Soporte Técnico", href: "/soporte" },
   },
@@ -35,12 +35,22 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0)
   const [count, setCount] = useState(0)
   const [hover, setHover] = useState(false)
+  const [imagesLoaded, setImagesLoaded] = useState<Record<number, boolean>>({})
 
   useEffect(() => {
     if (!api) return
     setCount(api.scrollSnapList().length)
     setCurrent(api.selectedScrollSnap())
-    api.on("select", () => setCurrent(api.selectedScrollSnap()))
+
+    const handleSelect = () => {
+      setCurrent(api.selectedScrollSnap())
+    }
+
+    api.on("select", handleSelect)
+
+    return () => {
+      api.off("select", handleSelect)
+    }
   }, [api])
 
   useEffect(() => {
@@ -51,6 +61,10 @@ export default function HeroCarousel() {
     return () => clearInterval(id)
   }, [api, hover])
 
+  const handleImageLoad = (index: number) => {
+    setImagesLoaded(prev => ({ ...prev, [index]: true }))
+  }
+
   return (
     <section className="relative w-full" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <Carousel setApi={setApi} className="w-full" opts={{ loop: true }}>
@@ -58,7 +72,24 @@ export default function HeroCarousel() {
           {slides.map((s, idx) => (
       <CarouselItem key={idx} className="h-[52vh] md:h-[64vh]">
               <div className="relative h-full w-full rounded-none">
-                <Image src={s.img} alt={s.title} fill priority={idx === 0} className="object-cover" />
+                {/* Loading skeleton */}
+                {!imagesLoaded[idx] && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                    <div className="text-gray-400 text-lg">Cargando...</div>
+                  </div>
+                )}
+                <Image 
+                  src={s.img} 
+                  alt={s.title} 
+                  width={1600} 
+                  height={900} 
+                  priority={idx === 0} 
+                  className={`object-cover w-full h-full transition-opacity duration-300 ${
+                    imagesLoaded[idx] ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+                  onLoad={() => handleImageLoad(idx)}
+                />
                 <div className="absolute inset-0 bg-black/40" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="container mx-auto px-4">

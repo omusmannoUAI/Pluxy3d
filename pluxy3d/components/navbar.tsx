@@ -25,7 +25,7 @@ import { useAuth } from "@/contexts/AuthContext"
 export default function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { getTotalItems, items } = useCart()
-  const cartItemCount = useMemo(() => getTotalItems(), [items, getTotalItems])
+  const cartItemCount = useMemo(() => items.reduce((total, item) => total + item.quantity, 0), [items])
   const { user } = useAuth()
 
   return (

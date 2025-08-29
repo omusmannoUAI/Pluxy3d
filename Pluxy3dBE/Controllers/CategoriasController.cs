@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace Pluxy3dBE.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/categorias")]
 public class CategoriasController(AppDbContextFromDb db) : ControllerBase
 {
     [HttpGet]

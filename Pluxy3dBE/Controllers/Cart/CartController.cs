@@ -5,7 +5,7 @@ using Pluxy3dBE.Repositories.Cart;
 namespace Pluxy3dBE.Controllers.Cart;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/carrito")]
 public class CarritoController(ICartService service) : ControllerBase
 {
     [HttpGet]

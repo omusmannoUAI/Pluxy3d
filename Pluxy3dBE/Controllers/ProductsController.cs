@@ -6,7 +6,7 @@ using System.Text;
 namespace Pluxy3dBE.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/productos")]
 public class ProductosController(IProductRepository repo) : ControllerBase
 {
     // Simple brand inference without DB schema changes

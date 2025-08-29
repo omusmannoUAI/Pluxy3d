@@ -7,7 +7,10 @@ import { CartProvider } from "@/contexts/CartContext"
 import { AuthProvider } from "@/contexts/AuthContext"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from 'react-hot-toast'
+import { ServiceWorkerProvider } from "@/components/ServiceWorkerProvider"
+import { CacheManager } from "@/components/CacheManager"
+import { CartDiagnostics } from "@/components/CartDiagnostics"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -15,7 +18,7 @@ export const metadata: Metadata = {
   title: "Pluxy 3D - Tienda de Impresoras 3D",
   description: "Compra y venta de impresoras 3D, componentes y servicio técnico",
   generator: 'v0.dev',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  metadataBase: new URL('http://localhost:3000'),
 }
 
 export default function RootLayout({
@@ -30,11 +33,24 @@ export default function RootLayout({
           <AuthProvider>
             <CartProvider>
               <div className="flex flex-col min-h-screen">
+                <ServiceWorkerProvider />
+                <CacheManager />
+                <CartDiagnostics />
                 <Navbar />
                 <main className="flex-grow">{children}</main>
                 <Footer />
               </div>
-              <Toaster />
+              <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+              border: '1px solid hsl(var(--border))',
+            },
+          }}
+        />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

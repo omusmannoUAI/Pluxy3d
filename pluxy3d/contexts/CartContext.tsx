@@ -52,7 +52,17 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     case 'SET_ERROR':
       return { ...state, error: action.payload }
     case 'SET_ITEMS':
-      return { ...state, items: action.payload, loading: false, error: null }
+      // Evitar actualizaciones innecesarias si los items son iguales
+      const itemsEqual = JSON.stringify(state.items) === JSON.stringify(action.payload)
+      if (itemsEqual && !state.loading) {
+        return state // No cambiar nada si son iguales y no está cargando
+      }
+      return {
+        ...state,
+        items: action.payload,
+        loading: false,
+        error: null
+      }
     case 'SET_STATE':
       return { ...state, ...action.payload }
     case 'ADD_ITEM': {
@@ -117,49 +127,80 @@ const initialState: CartState = {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
-  const loadingRef = React.useRef(false)  // Load cart on mount - only once with cleanup
+  const itemsRef = React.useRef<CartItem[]>([]) // Para evitar bucles infinitos en localStorage
+  const currentItemsRef = React.useRef<CartItem[]>([]) // Para acceder a items actuales en callbacks
+
+  // Mantener refs sincronizados con el estado
+  useEffect(() => {
+    itemsRef.current = [...state.items]
+    currentItemsRef.current = [...state.items]
+  }, [state.items])
+
+  // Load cart on mount - only once with cleanup and timeout
   useEffect(() => {
     if (typeof window === 'undefined') return
     let isMounted = true
     const loadCart = async () => {
       try {
-        dispatch({ type: 'SET_LOADING', payload: true })
-        const data = await apiFetch('/carrito')
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((d: any) => ({
-            id: d.id,
-            productId: d.productId,
-            name: d.name,
-            description: d.description,
-            price: Number(d.price ?? 0),
-            image: d.image,
-            quantity: Number(d.quantity ?? 1),
-          })) as CartItem[]
-          if (isMounted) dispatch({ type: 'SET_ITEMS', payload: mapped })
-        } else {
-          // Fallback a localStorage
-          const raw = window.localStorage.getItem('pluxy_cart')
-          const items = raw ? (JSON.parse(raw) as CartItem[]) : []
-          if (isMounted) dispatch({ type: 'SET_ITEMS', payload: items })
-        }
-      } catch (error) {
-        console.error('Error loading cart:', error)
-        // Fallback a localStorage si hay error
+        // Primero intentar cargar desde localStorage inmediatamente
         const raw = window.localStorage.getItem('pluxy_cart')
         const items = raw ? (JSON.parse(raw) as CartItem[]) : []
-        if (isMounted) dispatch({ type: 'SET_ITEMS', payload: items })
+        if (isMounted && items.length > 0) {
+          dispatch({ type: 'SET_ITEMS', payload: items })
+        }
+
+        // Luego intentar sincronizar con el backend en background (no bloqueante)
+        const timeoutId = setTimeout(async () => {
+          if (!isMounted) return
+          try {
+            const data = await apiFetch('/carrito')
+            if (Array.isArray(data) && data.length > 0 && isMounted) {
+              const mapped = data.map((d: any) => ({
+                id: d.id,
+                productId: d.productId,
+                name: d.name,
+                description: d.description,
+                price: Number(d.price ?? 0),
+                image: d.image,
+                quantity: Number(d.quantity ?? 1),
+              })) as CartItem[]
+              dispatch({ type: 'SET_ITEMS', payload: mapped })
+            }
+          } catch (error) {
+            // Silenciar errores del backend para no afectar UX
+            console.warn('Backend not available, using local cart')
+          }
+        }, 100) // Pequeño delay para no bloquear el renderizado inicial
+
+        return () => clearTimeout(timeoutId)
+      } catch (error) {
+        console.error('Error loading cart:', error)
       }
     }
-    loadCart()
-    return () => { isMounted = false }
-  }, [])
 
-  // Persistencia local simple
+    const cleanup = loadCart()
+    return () => {
+      isMounted = false
+      cleanup?.then?.(fn => fn?.())
+    }
+  }, []) // Sin dependencias para que solo se ejecute una vez
+
+  // Persistencia local optimizada - evitar bucles infinitos
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Solo guardar si los items realmente cambiaron y no están vacíos
+    const currentItems = currentItemsRef.current
+    const itemsChanged = JSON.stringify(state.items) !== JSON.stringify(currentItems)
+
+    if (!itemsChanged || state.items.length === 0) return
+
     try {
       window.localStorage.setItem('pluxy_cart', JSON.stringify(state.items))
-    } catch {}
+      itemsRef.current = [...state.items] // Actualizar ref con copia
+    } catch (error) {
+      console.warn('Error saving cart to localStorage:', error)
+    }
   }, [state.items])
 
   const refreshCart = useCallback(async () => {
@@ -175,12 +216,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         image: d.image,
         quantity: Number(d.quantity ?? 1),
       })) as CartItem[] : []
-      dispatch({ type: 'SET_ITEMS', payload: mapped })
+
+      // Solo actualizar si los datos realmente cambiaron
+      const dataChanged = JSON.stringify(mapped) !== JSON.stringify(currentItemsRef.current)
+      if (dataChanged) {
+        dispatch({ type: 'SET_ITEMS', payload: mapped })
+      } else {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
     } catch (error) {
       console.error('Error loading cart:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al cargar el carrito', loading: false } })
     }
-  }, [])
+  }, []) // Remover dependencias para evitar recreación constante
 
   const addToCart = useCallback(async (product: Product, quantity: number = 1) => {
     try {
@@ -191,6 +239,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartItemDto)
       })
+
+      // Después de agregar, refrescar el carrito
       await refreshCart()
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -237,30 +287,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const getTotalItems = useCallback(() => {
-    return state.items.reduce((total, item) => total + item.quantity, 0)
-  }, [state.items])
+    return currentItemsRef.current.reduce((total, item) => total + item.quantity, 0)
+  }, [])
 
   const getTotalPrice = useCallback(() => {
-    return state.items.reduce((total, item) => total + (item.price * item.quantity), 0)
-  }, [state.items])
+    return currentItemsRef.current.reduce((total, item) => total + (item.price * item.quantity), 0)
+  }, [])
 
   const value: CartContextType = {
     ...state,
     addToCart,
     addCustomItem: ({ name, price, description, quantity = 1, image }) => {
-      // Genera IDs únicos locales (negativos para evitar colisiones con backend)
-      const id = Date.now() + Math.floor(Math.random() * 1000)
-      const productId = -id
-      const newItem: CartItem = {
-        id,
-        productId,
-        name,
-        description,
-        price,
-        image,
-        quantity,
+      // Verificar si ya existe un item con el mismo nombre y precio
+      const existingItem = currentItemsRef.current.find(item =>
+        item.name === name && item.price === price && item.productId < 0
+      )
+
+      if (existingItem) {
+        // Si existe, actualizar cantidad en lugar de crear nuevo
+        dispatch({
+          type: 'UPDATE_ITEM',
+          payload: { id: existingItem.id, quantity: existingItem.quantity + quantity }
+        })
+      } else {
+        // Genera IDs únicos locales (negativos para evitar colisiones con backend)
+        const timestamp = Date.now()
+        const random = Math.floor(Math.random() * 1000)
+        const id = timestamp + random
+        const productId = -id
+
+        const newItem: CartItem = {
+          id,
+          productId,
+          name,
+          description,
+          price,
+          image,
+          quantity,
+        }
+        dispatch({ type: 'ADD_ITEM', payload: newItem })
       }
-      dispatch({ type: 'ADD_ITEM', payload: newItem })
     },
     removeFromCart,
     updateQuantity,
