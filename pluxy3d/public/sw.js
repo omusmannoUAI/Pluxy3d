@@ -1,7 +1,8 @@
 // Service Worker optimizado para Pluxy3D
-const CACHE_NAME = 'pluxy3d-v2'
-const STATIC_CACHE = 'pluxy3d-static-v2'
-const DYNAMIC_CACHE = 'pluxy3d-dynamic-v2'
+// Incrementa la versión si cambias la estrategia para invalidar caches antiguos
+const CACHE_NAME = 'pluxy3d-v3'
+const STATIC_CACHE = 'pluxy3d-static-v3'
+const DYNAMIC_CACHE = 'pluxy3d-dynamic-v3'
 
 // Recursos críticos a cachear inmediatamente
 const STATIC_ASSETS = [
@@ -16,13 +17,12 @@ const DYNAMIC_PATTERNS = [
   /^\/_next\/static\//,
   /^\/_next\/image\?/,
   /\.(png|jpg|jpeg|gif|svg|webp|ico|avif)$/,
-  /^\/api\//
+  // Nota: evitamos API por completo; aquí solo patrones estáticos
 ]
 
 // Recursos a no cachear
 const EXCLUDE_PATTERNS = [
   /\/admin\//,
-  /\/api\/analytics/,
   /\/_next\/webpack/,
   /hot-update/
 ]
@@ -61,6 +61,12 @@ self.addEventListener('fetch', (event) => {
   // Solo procesar GET requests
   if (request.method !== 'GET') return
 
+  // Ignorar cross-origin (APIs externas, backend en otro puerto, etc.)
+  if (url.origin !== self.location.origin) return
+
+  // Nunca interceptar endpoints de API locales
+  if (url.pathname.startsWith('/api/')) return
+
   // Excluir patrones específicos
   if (EXCLUDE_PATTERNS.some(pattern => pattern.test(url.pathname))) return
 
@@ -68,40 +74,25 @@ self.addEventListener('fetch', (event) => {
   if (STATIC_ASSETS.includes(url.pathname) ||
       DYNAMIC_PATTERNS.some(pattern => pattern.test(url.pathname + url.search))) {
 
+    // Preferir red para mantener frescura; si falla, usar cache
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) {
-          // Retornar cache inmediatamente y actualizar en background
-          fetch(request).then((response) => {
-            if (response.ok) {
-              caches.open(DYNAMIC_CACHE).then((cache) => {
-                cache.put(request, response.clone())
-              })
-            }
-          }).catch(() => {
-            // Mantener cache existente si falla la actualización
-          })
-          return cachedResponse
-        }
-
-        // Si no está en cache, fetch y cachear
-        return fetch(request).then((response) => {
-          if (!response.ok) return response
-
-          const responseClone = response.clone()
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, responseClone)
-          })
-
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const clone = response.clone()
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone))
+          }
           return response
-        }).catch(() => {
+        })
+        .catch(async () => {
+          const cached = await caches.match(request)
+          if (cached) return cached
           // Fallback para offline
           return new Response('Offline', {
             status: 503,
             statusText: 'Service Unavailable'
           })
         })
-      })
     )
   }
 })

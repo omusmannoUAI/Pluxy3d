@@ -1,14 +1,50 @@
 "use client"
 
 import { Button, Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label, Input } from "@/components/ui"
-import { MessageSquare, Bot, Printer, Wrench, FileQuestion, User } from "lucide-react"
+import { MessageSquare, Bot, Printer, Wrench, FileQuestion, User, Phone, Mail, Clock } from "lucide-react"
 import Link from "next/link"
-import { FormField, FormTextarea } from "@/components/shared/FormFields"
+import { TicketForm } from "./TicketForm"
+import { TicketsSidebar } from "./TicketsSidebar"
+import { FAQAccordion } from "./FAQAccordion"
 
 export default function SoporteContent() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Soporte Técnico</h1>
+      <h1 className="text-3xl font-bold mb-8">Centro de Soporte</h1>
+
+      {/* Contact quick cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-purple-100"><Phone className="text-purple-600" /></div>
+            <div>
+              <div className="text-sm text-muted-foreground">Teléfono</div>
+              <div className="font-medium">+54 11 1234-5678</div>
+              <div className="text-xs text-muted-foreground">Lun-Vie 9:00-18:00</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-purple-100"><Mail className="text-purple-600" /></div>
+            <div>
+              <div className="text-sm text-muted-foreground">Email</div>
+              <div className="font-medium">soporte@pluxy3d.com</div>
+              <div className="text-xs text-muted-foreground">Respuesta en 24hs</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-purple-100"><Clock className="text-purple-600" /></div>
+            <div>
+              <div className="text-sm text-muted-foreground">Horarios</div>
+              <div className="font-medium">Lun-Vie: 9:00-18:00</div>
+              <div className="text-xs text-muted-foreground">Sáb: 9:00-13:00</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Tabs defaultValue="tickets" className="w-full">
         <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
@@ -30,115 +66,11 @@ export default function SoporteContent() {
         <TabsContent value="tickets" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Crear Nuevo Ticket</CardTitle>
-                  <CardDescription>
-                    Completa el formulario para recibir asistencia técnica personalizada.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <FormField
-                    id="subject"
-                    label="Asunto"
-                    placeholder="Describe brevemente tu problema"
-                    required
-                  />
-                  <div className="space-y-2">
-                    <Label htmlFor="printer-model">Modelo de Impresora</Label>
-                    <Select>
-                      <SelectTrigger id="printer-model">
-                        <SelectValue placeholder="Selecciona tu modelo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ender3">Creality Ender 3</SelectItem>
-                        <SelectItem value="ender3-v2">Creality Ender 3 V2</SelectItem>
-                        <SelectItem value="ender3-pro">Creality Ender 3 Pro</SelectItem>
-                        <SelectItem value="magna2">Hellbot Magna 2</SelectItem>
-                        <SelectItem value="prusa-i3">Prusa i3 MK3S+</SelectItem>
-                        <SelectItem value="other">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="issue-type">Tipo de Problema</Label>
-                    <Select>
-                      <SelectTrigger id="issue-type">
-                        <SelectValue placeholder="Selecciona el tipo de problema" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hardware">Hardware</SelectItem>
-                        <SelectItem value="software">Software</SelectItem>
-                        <SelectItem value="calibration">Calibración</SelectItem>
-                        <SelectItem value="quality">Calidad de Impresión</SelectItem>
-                        <SelectItem value="warranty">Garantía</SelectItem>
-                        <SelectItem value="other">Otro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <FormTextarea
-                    id="description"
-                    label="Descripción Detallada"
-                    placeholder="Describe detalladamente el problema que estás experimentando"
-                    rows={5}
-                    required
-                  />
-                  <FormField
-                    id="attachments"
-                    label="Adjuntos (opcional)"
-                    type="file"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Puedes adjuntar imágenes o videos que muestren el problema.
-                  </p>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="purple" className="w-full">Enviar Ticket</Button>
-                </CardFooter>
-              </Card>
+              <TicketForm />
             </div>
 
             <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mis Tickets</CardTitle>
-                  <CardDescription>Historial de tus tickets de soporte.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-4">
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">Problemas Ender 3</h3>
-                          <p className="text-sm text-muted-foreground">
-                            La impresora empezo saca las impresiones movidas
-                          </p>
-                        </div>
-                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">En Proceso</span>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">Creado: 30 Nov, 2023</div>
-                    </div>
-
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">Extrusor dañado, garantía</h3>
-                          <p className="text-sm text-muted-foreground">
-                            El extrusor presenta fallas después de 2 semanas de uso
-                          </p>
-                        </div>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Resuelto</span>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">Creado: 15 Nov, 2023</div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Ver Todos los Tickets
-                  </Button>
-                </CardFooter>
-              </Card>
+              <TicketsSidebar />
             </div>
           </div>
         </TabsContent>
@@ -283,64 +215,7 @@ export default function SoporteContent() {
         <TabsContent value="faq" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preguntas Frecuentes</CardTitle>
-                  <CardDescription>
-                    Encuentra respuestas a las preguntas más comunes sobre impresoras 3D.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">¿Cómo calibro la cama de mi impresora 3D?</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Para calibrar la cama de tu impresora 3D, sigue estos pasos:
-                      </p>
-                      <ol className="list-decimal list-inside text-sm mt-2 space-y-1 text-muted-foreground">
-                        <li>Precalienta la cama a la temperatura de impresión</li>
-                        <li>Utiliza la función de nivelación manual en el menú de la impresora</li>
-                        <li>Ajusta los tornillos de nivelación en cada esquina</li>
-                        <li>Utiliza una hoja de papel para verificar la distancia entre la boquilla y la cama</li>
-                        <li>Repite el proceso varias veces para asegurar una nivelación uniforme</li>
-                      </ol>
-                    </div>
-
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">¿Por qué mi filamento no sale de la boquilla?</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Si el filamento no sale de la boquilla, puede deberse a:
-                      </p>
-                      <ul className="list-disc list-inside text-sm mt-2 space-y-1 text-muted-foreground">
-                        <li>Boquilla obstruida</li>
-                        <li>Temperatura insuficiente</li>
-                        <li>Problema en el extrusor</li>
-                        <li>Filamento de baja calidad o húmedo</li>
-                      </ul>
-                      <p className="text-sm mt-2 text-muted-foreground">
-                        Recomendamos limpiar la boquilla con el método de "cold pull" o reemplazarla si es necesario.
-                      </p>
-                    </div>
-
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-2">¿Cómo mejorar la adhesión de la primera capa?</h3>
-                      <p className="text-sm text-muted-foreground">Para mejorar la adhesión de la primera capa:</p>
-                      <ul className="list-disc list-inside text-sm mt-2 space-y-1 text-muted-foreground">
-                        <li>Asegúrate de que la cama esté bien nivelada</li>
-                        <li>Limpia la superficie de impresión con alcohol isopropílico</li>
-                        <li>Ajusta la altura de la primera capa en el slicer</li>
-                        <li>Aumenta la temperatura de la cama para el primer par de capas</li>
-                        <li>Utiliza adhesivos como laca para el cabello o pegamento en barra</li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Ver Más Preguntas Frecuentes
-                  </Button>
-                </CardFooter>
-              </Card>
+              <FAQAccordion />
             </div>
 
             <div>

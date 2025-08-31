@@ -13,6 +13,10 @@ using Microsoft.AspNetCore.ResponseCompression;
 using System.IO.Compression;
 using Serilog.Events;
 using Pluxy3dBE.Repositories.Cart.Ef;
+using Pluxy3dBE.DomainContracts.Services;
+using Pluxy3dBE.Domain.Services;
+using Pluxy3dBE.DalContracts;
+using Pluxy3dBE.Repository.Repositories;
 
 // Configuración básica de Serilog
 Log.Logger = new LoggerConfiguration()
@@ -73,10 +77,15 @@ try
     });
 
     builder.Services.AddScoped<IProductRepository, EfProductRepository>();
+    builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+    builder.Services.AddScoped<IUsersService, UsersService>();
 
     // Repositorio y Servicio de Carrito - EF ahora
     builder.Services.AddScoped<ICartRepository, EfCartRepository>();
     builder.Services.AddScoped<ICartService, CartService>();
+
+    // AutoMapper: registrar perfiles del proyecto de dominio
+    builder.Services.AddAutoMapper(typeof(Pluxy3dBE.Domain.Mappings.ProductoProfile).Assembly);
 
     // AutoMapper - comentado temporalmente debido a conflicto de paquetes
     // var currentAssembly = System.Reflection.Assembly.GetExecutingAssembly();
