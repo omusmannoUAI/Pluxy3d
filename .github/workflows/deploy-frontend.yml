@@ -17,15 +17,7 @@ jobs:
   build-and-deploy-frontend:
     runs-on: ubuntu-latest
     env:
-      NODE_VERSION: '20.x'
-      # Optional defaults to secrets; a resolve step will also read repo vars and write to GITHUB_ENV
-      AZURE_WEBAPP_NAME_FRONTEND: ${{ secrets.AZURE_WEBAPP_NAME_FRONTEND }}
-      AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
-      AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  NODE_VERSION: '20.x'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,12 +62,18 @@ jobs:
           RESOLVED_PP1: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
           RESOLVED_PP2: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
           RESOLVED_SP: ${{ secrets.AZURE_CREDENTIALS }}
+          RESOLVED_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          RESOLVED_VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          RESOLVED_VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           appName="${RESOLVED_SECRET_APP_NAME:-$RESOLVED_VAR_APP_NAME}"
           if [ -n "$appName" ]; then echo "AZURE_WEBAPP_NAME_FRONTEND=$appName" >> "$GITHUB_ENV"; fi
           if [ -n "$RESOLVED_PP1" ]; then echo "AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND=$RESOLVED_PP1" >> "$GITHUB_ENV"; fi
           if [ -n "$RESOLVED_PP2" ]; then echo "AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND=$RESOLVED_PP2" >> "$GITHUB_ENV"; fi
           if [ -n "$RESOLVED_SP" ]; then echo "AZURE_CREDENTIALS=$RESOLVED_SP" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_VERCEL_TOKEN" ]; then echo "VERCEL_TOKEN=$RESOLVED_VERCEL_TOKEN" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_VERCEL_ORG_ID" ]; then echo "VERCEL_ORG_ID=$RESOLVED_VERCEL_ORG_ID" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_VERCEL_PROJECT_ID" ]; then echo "VERCEL_PROJECT_ID=$RESOLVED_VERCEL_PROJECT_ID" >> "$GITHUB_ENV"; fi
 
       - name: Deploy to Vercel (if configured)
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}

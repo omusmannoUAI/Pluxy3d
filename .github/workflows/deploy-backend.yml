@@ -23,12 +23,7 @@ jobs:
   build-and-deploy:
     runs-on: windows-latest
     env:
-      DOTNET_VERSION: '9.0.x'
-      # Optional: default to secrets; the "Resolve deploy environment" step will override via GITHUB_ENV if repo vars exist
-      AZURE_WEBAPP_NAME_BACKEND: ${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}
-      AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND }}
-      AZUREAPPSERVICE_PUBLISHPROFILE: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  DOTNET_VERSION: '9.0.x'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +39,31 @@ jobs:
         run: |
           $appName = $env:RESOLVED_SECRET_APP_NAME
           if (-not $appName) { $appName = $env:RESOLVED_VAR_APP_NAME }
+          # Try to infer app name from publish profile XML when not provided
+          if (-not $appName -and $env:RESOLVED_PP2) {
+            try {
+              [xml]$xml = $env:RESOLVED_PP2
+              $ms = $xml.publishData.publishProfile | Where-Object { $_.msdeploySite } | Select-Object -First 1
+              if ($ms -and $ms.msdeploySite) { $appName = $ms.msdeploySite }
+              elseif ($xml.publishData.publishProfile[0].destinationAppUrl) {
+                $url = [Uri]$xml.publishData.publishProfile[0].destinationAppUrl
+                $host = $url.Host
+                if ($host -match '^([^.]+)') { $appName = $Matches[1] }
+              }
+            } catch {}
+          }
+          if (-not $appName -and $env:RESOLVED_PP1) {
+            try {
+              [xml]$xml2 = $env:RESOLVED_PP1
+              $ms2 = $xml2.publishData.publishProfile | Where-Object { $_.msdeploySite } | Select-Object -First 1
+              if ($ms2 -and $ms2.msdeploySite) { $appName = $ms2.msdeploySite }
+              elseif ($xml2.publishData.publishProfile[0].destinationAppUrl) {
+                $url2 = [Uri]$xml2.publishData.publishProfile[0].destinationAppUrl
+                $host2 = $url2.Host
+                if ($host2 -match '^([^.]+)') { $appName = $Matches[1] }
+              }
+            } catch {}
+          }
           if ($appName) { "AZURE_WEBAPP_NAME_BACKEND=$appName" >> $env:GITHUB_ENV }
           if ($env:RESOLVED_PP1) { "AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND=$env:RESOLVED_PP1" >> $env:GITHUB_ENV }
           if ($env:RESOLVED_PP2) { "AZUREAPPSERVICE_PUBLISHPROFILE=$env:RESOLVED_PP2" >> $env:GITHUB_ENV }
@@ -66,7 +86,14 @@ jobs:
         working-directory: Pluxy3dBE
         run: dotnet publish --configuration Release --no-build -o ${{ runner.temp }}\publish
 
+      - name: Skip deploy (no credentials provided) 
+        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND == '' && env.AZUREAPPSERVICE_PUBLISHPROFILE == '' && env.AZURE_CREDENTIALS == '' }}
+        shell: pwsh
+        run: |
+          Write-Host "No deploy credentials provided. Completed build and publish artifacts only."
+
       - name: Validate deploy inputs
+        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND != '' || env.AZUREAPPSERVICE_PUBLISHPROFILE != '' || env.AZURE_CREDENTIALS != '' }}
         shell: pwsh
         run: |
           if (-not "$env:AZURE_WEBAPP_NAME_BACKEND") {
@@ -111,7 +138,7 @@ jobs:
           package: ${{ runner.temp }}\publish
 
       - name: Fail if no deploy path succeeded
-        if: ${{ (steps.deploy_pp_backend.outcome != 'success') && (steps.deploy_pp_appservice.outcome != 'success') && (steps.azure_login.outcome != 'success') }}
+        if: ${{ (env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND != '' || env.AZUREAPPSERVICE_PUBLISHPROFILE != '' || env.AZURE_CREDENTIALS != '') && (steps.deploy_pp_backend.outcome != 'success') && (steps.deploy_pp_appservice.outcome != 'success') && (steps.azure_login.outcome != 'success') }}
         shell: pwsh
         run: |
           Write-Error "Deployment did not run or failed. Ensure the publish profile is valid (and SCM Basic Auth is enabled) or provide AZURE_CREDENTIALS for service principal login."
