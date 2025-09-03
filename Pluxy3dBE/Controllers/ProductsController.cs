@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Pluxy3dBE.Repositories.Product;
+using Pluxy3dBE.DomainContracts.Services;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -7,7 +7,7 @@ namespace Pluxy3dBE.Controllers;
 
 [ApiController]
 [Route("api/productos")]
-public class ProductosController(IProductRepository repo) : ControllerBase
+public class ProductosController(IProductoService service) : ControllerBase
 {
     // Simple brand inference without DB schema changes
     private static readonly string[] KnownBrands = new[]
@@ -35,40 +35,27 @@ public class ProductosController(IProductRepository repo) : ControllerBase
         [FromQuery] int? categoryId = null,
         [FromQuery] string? category = null)
     {
-        (IEnumerable<Pluxy3dBE.Entities.Producto> items, int total) result;
-
-        if (categoryId.HasValue)
+        // Build a search DTO and delegate to domain service
+        var search = new Pluxy3dBE.DomainContracts.DTOs.ProductoSearchDto
         {
-            result = await repo.GetVisiblePagedByCategoryAsync(page, pageSize, sortBy, desc, categoryId.Value);
-        }
-        else if (!string.IsNullOrWhiteSpace(category))
-        {
-            // Fallback: resolve by category name (case-insensitive)
-            var normalized = category.Trim().ToLowerInvariant();
-            var (itemsAll, totalAll) = await repo.GetVisiblePagedAsync(page, pageSize, sortBy, desc);
-            var filtered = itemsAll.Where(p =>
-                ((p.Categoria?.Nombre ?? string.Empty).Trim().ToLowerInvariant() == normalized)
-                || Slugify((p.Categoria?.Nombre ?? string.Empty)) == normalized
-            );
-            result = (filtered, filtered.Count());
-        }
-        else
-        {
-            result = await repo.GetVisiblePagedAsync(page, pageSize, sortBy, desc);
-        }
-        var (items, total) = result;
-        var dto = items.Select(p => new {
-            id = p.ProductoId,
+            Categoria = category,
+            Page = page,
+            PageSize = pageSize,
+            SoloActivos = true,
+        };
+        var result = await service.SearchProductosAsync(search);
+        var dto = result.Items.Select(p => new {
+            id = p.Id,
             name = p.Nombre,
             description = p.Descripcion,
-            price = p.PrecioBase ?? 0m,
+            price = p.Precio,
             image = p.Image,
-            category = p.Categoria != null ? p.Categoria.Nombre : null,
-            brand = InferBrand(p)
+            category = p.Categoria,
+            brand = p.Marca
         }).ToArray();
 
         // Add pagination headers
-        Response.Headers["X-Total-Count"] = total.ToString();
+    Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
         Response.Headers["X-Page"] = page.ToString();
         Response.Headers["X-Page-Size"] = pageSize.ToString();
 
@@ -89,16 +76,16 @@ public class ProductosController(IProductRepository repo) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
-        var p = await repo.GetByIdAsync(id);
+        var p = await service.GetProductoByIdAsync(id);
         if (p is null) return NotFound();
         var dto = new {
-            id = p.ProductoId,
+            id = p.Id,
             name = p.Nombre,
             description = p.Descripcion,
-            price = p.PrecioBase ?? 0m,
+            price = p.Precio,
             image = p.Image,
-            category = p.Categoria != null ? p.Categoria.Nombre : null,
-            brand = InferBrand(p)
+            category = p.Categoria,
+            brand = p.Marca
         };
 
         var payload = System.Text.Json.JsonSerializer.Serialize(dto);

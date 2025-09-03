@@ -1,0 +1,44 @@
+name: Deploy Pluxy3d Backend
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Pluxy3dBE/**'
+      - '.github/workflows/deploy-backend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    env:
+      DOTNET_VERSION: '9.0.x'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        working-directory: Pluxy3dBE
+        run: dotnet restore
+
+      - name: Build
+        working-directory: Pluxy3dBE
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish
+        working-directory: Pluxy3dBE
+        run: dotnet publish --configuration Release --no-build -o ${{ runner.temp }}\publish
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND }}
+          package: ${{ runner.temp }}\publish

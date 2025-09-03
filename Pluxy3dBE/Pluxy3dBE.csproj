@@ -45,9 +45,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Pluxy3dBE.Composition\Pluxy3dBE.Composition.csproj" />
     <ProjectReference Include="..\Pluxy3dBE.DomainContracts\Pluxy3dBE.DomainContracts.csproj" />
-  <ProjectReference Include="..\Pluxy3dBE.Domain\Pluxy3dBE.Domain.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.Domain\Pluxy3dBE.Domain.csproj" />
     <ProjectReference Include="..\Pluxy3dBE.Entities\Pluxy3dBE.Entities.csproj" />
     <ProjectReference Include="..\Pluxy3dBE.Repository\Pluxy3dBE.Repository.csproj" />
   </ItemGroup>
