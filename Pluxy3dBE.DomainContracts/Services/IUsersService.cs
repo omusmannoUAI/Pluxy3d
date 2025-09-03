@@ -6,4 +6,5 @@ public interface IUsersService
 {
     Task<PagedResult<UsuarioDto>> GetUsersAsync(string? q, string? status, int page, int pageSize);
     Task<UsuarioDto?> GetByIdAsync(Guid id);
+    Task<FileExportDto> ExportCsvAsync(string? q, string? status);
 }

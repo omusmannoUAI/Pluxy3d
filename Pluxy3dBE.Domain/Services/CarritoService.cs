@@ -99,6 +99,12 @@ public class CarritoService : ICarritoService
         }
     }
 
+    public async Task<CarritoItemDto?> GetItemByIdAsync(int itemId)
+    {
+        var item = await _carritoRepository.GetByIdAsync(itemId);
+        return item is null ? null : _mapper.Map<CarritoItemDto>(item);
+    }
+
     public async Task<bool> UpdateItemCantidadAsync(UpdateCarritoItemDto updateDto)
     {
         var item = await _carritoRepository.GetByIdAsync(updateDto.ItemId);

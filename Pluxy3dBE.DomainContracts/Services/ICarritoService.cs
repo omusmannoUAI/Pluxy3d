@@ -18,6 +18,11 @@ public interface ICarritoService
     Task<CarritoItemDto> AddItemToCarritoAsync(AddCarritoItemDto addItemDto);
 
     /// <summary>
+    /// Obtiene un item del carrito por su ID
+    /// </summary>
+    Task<CarritoItemDto?> GetItemByIdAsync(int itemId);
+
+    /// <summary>
     /// Actualiza la cantidad de un item en el carrito
     /// </summary>
     Task<bool> UpdateItemCantidadAsync(UpdateCarritoItemDto updateDto);

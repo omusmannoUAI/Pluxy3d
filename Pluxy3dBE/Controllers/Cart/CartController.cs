@@ -15,9 +15,8 @@ public class CarritoController(ICarritoService service) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
-        var carrito = await service.GetCarritoAsync(null, null);
-        var item = carrito.Items.FirstOrDefault(i => i.Id == id);
-        return item is null ? NotFound() : Ok(item);
+    var item = await service.GetItemByIdAsync(id);
+    return item is null ? NotFound() : Ok(item);
     }
 
     [HttpPost]
