@@ -49,10 +49,13 @@ public static class ApplicationBuilderExtensions
         app.UseHttpsRedirection();
         app.UseResponseCompression();
         app.UseResponseCaching();
-        app.UseCors("AllowFrontend");
-        app.UseRouting();
-        app.UseHealthChecks("/health");
-        app.MapControllers();
+    app.UseCors("AllowFrontend");
+    app.UseRouting();
+    // Map health checks via endpoints (works well under Azure/App Service and PathBase)
+    app.MapHealthChecks("/health");
+    app.MapHealthChecks("/hc");
+    app.MapGet("/healthz", () => Results.Ok("OK"));
+    app.MapControllers();
 
         // Root endpoint
         app.MapGet("/", () => "Pluxy3D Backend API está funcionando correctamente! 🚀");

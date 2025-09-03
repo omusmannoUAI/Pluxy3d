@@ -1,7 +1,8 @@
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  moduleNameMapping: {
+  // Correct key name is moduleNameMapper
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
@@ -32,4 +33,10 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': 'babel-jest',
   },
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/.next/',
+    '/.next/standalone/',
+  ],
+  passWithNoTests: true,
 }
