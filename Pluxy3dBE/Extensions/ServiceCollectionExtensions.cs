@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Pluxy3dBE.Repository.Data;
 using Pluxy3dBE.DalContracts;
@@ -9,6 +10,13 @@ using Pluxy3dBE.Repository.Repositories;
 using Pluxy3dBE.DomainContracts.Services;
 using Pluxy3dBE.Domain.Services;
 using System.Text.Json.Serialization;
+using Pluxy3dBE.DomainContracts.Commands;
+using Pluxy3dBE.DomainContracts.Payment;
+using Pluxy3dBE.DomainContracts.States;
+using Pluxy3dBE.DomainContracts.Events;
+using Pluxy3dBE.DomainContracts.Authorization;
+using Pluxy3dBE.DomainContracts.Templates;
+using Pluxy3dBE.DalContracts.Repositories;
 
 namespace Pluxy3dBE.Extensions;
 
@@ -16,7 +24,10 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration config)
     {
-        services.AddControllers()
+        services.AddControllers(options =>
+            {
+                options.Filters.Add<Pluxy3dBE.Filters.PagedResultHeadersFilter>();
+            })
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
@@ -37,27 +48,47 @@ public static class ServiceCollectionExtensions
 
             if (isSQLite)
             {
-                options.UseSqlite(cs).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                options
+                    .UseSqlite(cs)
+                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
             }
             else
             {
-                options.UseSqlServer(cs, sql =>
-                {
-                    sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null);
-                    sql.CommandTimeout(30);
-                }).UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                options
+                    .UseSqlServer(cs, sql =>
+                    {
+                        sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(2), null);
+                        sql.CommandTimeout(30);
+                    })
+                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
             }
         });
 
-        // DAL repositories (shared projects)
-        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-        services.AddScoped<IProductoRepository, ProductoRepository>();
+    // DAL repositories (shared projects)
+    services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+    services.AddScoped<IProductoRepository, ProductoRepository>();
         services.AddScoped<ICarritoRepository, CarritoRepository>();
+    services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+    services.AddScoped<IEstadoVentaRepository, EstadoVentaRepository>();
+    services.AddScoped<IVentaRepository, VentaRepository>();
 
         // Domain services
-        services.AddScoped<IUsersService, UsersService>();
+    services.AddScoped<IUsersService, UsersService>();
         services.AddScoped<IProductoService, ProductoService>();
-        services.AddScoped<ICarritoService, CarritoService>();
+    services.AddScoped<ICarritoService, CarritoService>();
+    services.AddScoped<ICategoriaService, CategoriaService>();
+    services.AddSingleton<IAuthorizationStrategyFactory, AuthorizationStrategyFactory>();
+    services.AddScoped<Pluxy3dBE.DomainContracts.Authorization.IAuthorizationService, AuthorizationService>();
+    services.AddScoped<IVentaService, VentaService>();
+    services.AddSingleton<IPaymentProcessorFactory, PaymentProcessorFactory>();
+    services.AddSingleton<IVentaStateFactory, VentaStateFactory>();
+    services.AddSingleton<IDomainEventPublisher, DomainEventPublisher>();
+    services.AddSingleton<VentaProcessorFactory>();
+    // Command pattern for carrito
+    services.AddScoped<ICommandDispatcher, CommandDispatcher>();
+    services.AddSingleton<ICarritoCommandFactory, CarritoCommandFactory>();
 
         // Health checks
         services.AddHealthChecks();

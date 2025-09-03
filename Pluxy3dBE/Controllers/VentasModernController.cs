@@ -18,17 +18,20 @@ public class VentasModernController : ControllerBase
     private readonly IAuthorizationService _authorizationService;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly ILogger<VentasModernController> _logger;
+    private readonly ICarritoCommandFactory _carritoCommandFactory;
 
     public VentasModernController(
         IVentaService ventaService,
         IAuthorizationService authorizationService,
-        ICommandDispatcher commandDispatcher,
-        ILogger<VentasModernController> logger)
+    ICommandDispatcher commandDispatcher,
+    ILogger<VentasModernController> logger,
+    ICarritoCommandFactory carritoCommandFactory)
     {
         _ventaService = ventaService;
         _authorizationService = authorizationService;
         _commandDispatcher = commandDispatcher;
-        _logger = logger;
+    _logger = logger;
+    _carritoCommandFactory = carritoCommandFactory;
     }
 
     /// <summary>
@@ -189,54 +192,29 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
-            // COMMAND PATTERN - Crear y ejecutar comando específico sin IF/SWITCH
-            CarritoCommandResult result;
-            
-            switch (action.ToLower())
+            // Factory crea el comando según la acción (sin switch)
+            var args = new Dictionary<string, object>
             {
-                case "add":
-                    var addCommand = new AddItemToCarritoCommand
-                    {
-                        ImpresoraId = dto.ProductoId,
-                        Cantidad = dto.Cantidad,
-                        UsuarioId = userId.ToString(),
-                        PrecioUnitario = 100.0m // Precio por defecto - en producción vendría de la DB
-                    };
-                    result = await _commandDispatcher.DispatchAsync(addCommand);
-                    break;
-                
-                case "update":
-                    var updateCommand = new UpdateCarritoItemCommand
-                    {
-                        ItemId = dto.ProductoId, // Usar ProductoId como ItemId temporalmente
-                        NuevaCantidad = dto.Cantidad,
-                        UsuarioId = userId.ToString()
-                    };
-                    result = await _commandDispatcher.DispatchAsync(updateCommand);
-                    break;
-                
-                case "remove":
-                    var removeCommand = new RemoveItemFromCarritoCommand
-                    {
-                        ItemId = dto.ProductoId, // Usar ProductoId como ItemId temporalmente
-                        UsuarioId = userId.ToString()
-                    };
-                    result = await _commandDispatcher.DispatchAsync(removeCommand);
-                    break;
-                
-                case "clear":
-                    var clearCommand = new ClearCarritoCommand
-                    {
-                        UsuarioId = userId.ToString()
-                    };
-                    result = await _commandDispatcher.DispatchAsync(clearCommand);
-                    break;
-                
-                default:
-                    return BadRequest(new { Success = false, Error = "Acción no válida" });
+                { nameof(AddItemToCarritoCommand.ImpresoraId), dto.ProductoId },
+                { nameof(AddItemToCarritoCommand.Cantidad), dto.Cantidad },
+                { nameof(AddItemToCarritoCommand.UsuarioId), userId.ToString() },
+                { nameof(AddItemToCarritoCommand.SessionId), string.Empty },
+            };
+
+            // Precio opcional desde metadata
+            if (dto.Metadata.TryGetValue("PrecioUnitario", out var precio) && precio is not null)
+            {
+                args[nameof(AddItemToCarritoCommand.PrecioUnitario)] = Convert.ToDecimal(precio);
             }
-            
+
+            // Campos para otros comandos
+            args[nameof(UpdateCarritoItemCommand.ItemId)] = dto.ProductoId;
+            args[nameof(UpdateCarritoItemCommand.NuevaCantidad)] = dto.Cantidad;
+            args[nameof(RemoveItemFromCarritoCommand.ItemId)] = dto.ProductoId;
+
+            var command = _carritoCommandFactory.Create(action, args);
+            var result = await _commandDispatcher.DispatchAsync(command);
+
             return result.Success 
                 ? Ok(new { Success = true, Message = result.Message, Data = result.Data })
                 : BadRequest(new { Success = false, Error = result.Message });

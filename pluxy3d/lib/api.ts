@@ -1,4 +1,13 @@
-export const API_URL = 'http://localhost:5299/api';
+// Resolve API base URL from env with a safe local fallback
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5299/api';
+
+// Dev hint when env var is missing
+if (process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_API_URL) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "NEXT_PUBLIC_API_URL is not set; falling back to 'http://localhost:5299/api'. Set it in .env.local for correct environments."
+  )
+}
 
 // Cache inteligente con TTL
 interface CacheEntry {

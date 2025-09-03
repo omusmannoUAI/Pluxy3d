@@ -41,3 +41,12 @@ Thumbs.db
 package-lock.json
 yarn.lock
 Pluxy3dBE/logs/
+backup_repository/
+legacy_backup/
+ModernNetProject/
+tools/ApplyMigrations/bin/
+tools/ApplyMigrations/obj/
+*.bacpac
+*.bak
+script base.sql
+Pluxy3dBE/pluxy3d.db*

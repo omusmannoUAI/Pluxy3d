@@ -25,6 +25,7 @@ public class VentaService : IVentaService
     private readonly IVentaStateFactory _ventaStateFactory;
     private readonly IDomainEventPublisher _eventPublisher;
     private readonly VentaProcessorFactory _ventaProcessorFactory;
+    private readonly IEstadoVentaRepository _estadoVentaRepository;
 
     public VentaService(
         IVentaRepository ventaRepository,
@@ -33,7 +34,8 @@ public class VentaService : IVentaService
         IPaymentProcessorFactory paymentProcessorFactory,
         IVentaStateFactory ventaStateFactory,
         IDomainEventPublisher eventPublisher,
-        VentaProcessorFactory ventaProcessorFactory)
+    VentaProcessorFactory ventaProcessorFactory,
+    IEstadoVentaRepository estadoVentaRepository)
     {
         _ventaRepository = ventaRepository;
         _carritoRepository = carritoRepository;
@@ -42,6 +44,7 @@ public class VentaService : IVentaService
         _ventaStateFactory = ventaStateFactory;
         _eventPublisher = eventPublisher;
         _ventaProcessorFactory = ventaProcessorFactory;
+    _estadoVentaRepository = estadoVentaRepository;
     }
 
     /// <summary>
@@ -84,7 +87,12 @@ public class VentaService : IVentaService
                 return VentaResult.Failure(processingResult.ErrorMessage);
             }
 
-            return VentaResult.Success(processingResult.Venta!);
+            // Venta is guaranteed by successful processing; defensive null-coalescing for analyzer
+            if (processingResult.Venta is null)
+            {
+                return VentaResult.Failure("No se pudo crear la venta (resultado vacío)");
+            }
+            return VentaResult.Success(processingResult.Venta);
         }
         catch (Exception ex)
         {
@@ -171,7 +179,8 @@ public class VentaService : IVentaService
             }
 
             // Obtener estado actual
-            var estadoActual = await GetEstadoNameAsync(venta.EstadoId ?? 1);
+            var estadoActual = await _estadoVentaRepository.GetNombreByIdAsync(venta.EstadoId ?? 1);
+            if (string.IsNullOrWhiteSpace(estadoActual)) estadoActual = "Pendiente";
             
             // STATE PATTERN - Obtener estado usando Factory
             var currentState = _ventaStateFactory.CreateState(estadoActual);
@@ -190,13 +199,18 @@ public class VentaService : IVentaService
             await currentState.OnExitingAsync(context, nuevoEstado);
 
             // Cambiar estado en BD
-            var nuevoEstadoId = await GetEstadoIdAsync(nuevoEstado);
+            var nuevoEstadoId = await _estadoVentaRepository.GetIdByNombreAsync(nuevoEstado);
+            if (nuevoEstadoId <= 0)
+            {
+                return StateChangeResult.Failure($"Estado destino desconocido: {nuevoEstado}");
+            }
             venta.EstadoId = nuevoEstadoId;
             await _ventaRepository.UpdateAsync(venta);
 
             // Obtener nuevo estado y ejecutar acciones
             var newState = _ventaStateFactory.CreateState(nuevoEstado);
-            await newState.OnEnteringAsync(context, estadoActual);
+            // Ensure we pass a non-null previous state name
+            await newState.OnEnteringAsync(context, estadoActual ?? "Pendiente");
 
             // OBSERVER PATTERN - Publicar evento
             await _eventPublisher.PublishAsync(new VentaEstadoCambiadoEvent
@@ -260,35 +274,5 @@ public class VentaService : IVentaService
     // MÉTODOS AUXILIARES
     // ============================
 
-    private async Task<string> GetEstadoNameAsync(int estadoId)
-    {
-        // Simular obtención del nombre del estado
-        return estadoId switch
-        {
-            1 => "Pendiente",
-            2 => "Confirmada",
-            3 => "EnProceso",
-            4 => "Enviada",
-            5 => "Entregada",
-            6 => "Cancelada",
-            7 => "Reembolsada",
-            _ => "Pendiente"
-        };
-    }
-
-    private async Task<int> GetEstadoIdAsync(string estadoName)
-    {
-        // Simular obtención del ID del estado
-        return estadoName switch
-        {
-            "Pendiente" => 1,
-            "Confirmada" => 2,
-            "EnProceso" => 3,
-            "Enviada" => 4,
-            "Entregada" => 5,
-            "Cancelada" => 6,
-            "Reembolsada" => 7,
-            _ => 1
-        };
-    }
+    // Métodos legacy eliminados al usar IEstadoVentaRepository
 }

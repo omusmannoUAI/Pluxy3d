@@ -33,8 +33,24 @@ try
     builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
     builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
-        // TODO: Agregar módulos de composición cuando estén listos
-        // CompositionRoot.ConfigureContainer(containerBuilder, builder.Configuration);
+        // Explicit Autofac registrations to ensure resolution at runtime
+        // (in addition to Microsoft DI registrations in AddApiServices)
+        containerBuilder.RegisterType<Pluxy3dBE.Repository.Repositories.VentaRepository>()
+            .As<Pluxy3dBE.DalContracts.Repositories.IVentaRepository>()
+            .InstancePerLifetimeScope();
+
+        containerBuilder.RegisterType<Pluxy3dBE.Repository.Repositories.EstadoVentaRepository>()
+            .As<Pluxy3dBE.DalContracts.IEstadoVentaRepository>()
+            .InstancePerLifetimeScope();
+
+        containerBuilder.RegisterType<Pluxy3dBE.Domain.Services.VentaService>()
+            .As<Pluxy3dBE.DomainContracts.Services.IVentaService>()
+            .InstancePerLifetimeScope();
+
+        // Authorization binding (avoid collision with ASP.NET Core Authorization service)
+        containerBuilder.RegisterType<Pluxy3dBE.Domain.Services.AuthorizationService>()
+            .As<Pluxy3dBE.DomainContracts.Authorization.IAuthorizationService>()
+            .InstancePerLifetimeScope();
     });
 
     // Services organized in extension
@@ -70,6 +86,9 @@ try
                 Log.Warning(ex, "Fallo al aplicar migraciones, intentando EnsureCreated");
                 await db.Database.EnsureCreatedAsync();
             }
+
+            // Seed mínimos
+            await Pluxy3dBE.Data.DbInitializer.SeedAsync(app.Services);
         }
         catch (Exception ex)
         {

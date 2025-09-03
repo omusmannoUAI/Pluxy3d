@@ -5,12 +5,12 @@ namespace Pluxy3dBE.Controllers;
 
 [ApiController]
 [Route("api/categorias")]
-public class CategoriasController(IProductoService productos) : ControllerBase
+public class CategoriasController(ICategoriaService categorias) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-    var cats = await productos.GetCategoriasAsync();
+    var cats = await categorias.GetCategoriasAsync();
     return Ok(cats);
     }
 }

@@ -6,7 +6,7 @@ Quickstart
 - Abrir: http://localhost:3000 y Swagger en http://localhost:5299/swagger
 
 Env
-- NEXT_PUBLIC_API_URL=http://localhost:5299/api
+- Create `pluxy3d/.env.local` with: `NEXT_PUBLIC_API_URL=http://localhost:5299/api`
 
 Arquitectura
 - Clean Architecture con proyectos Entities, Repository, Domain, DomainContracts, Composition y API.
@@ -19,3 +19,7 @@ API Carrito (in-memory)
 - PUT    /api/carrito/{id} (body: número con la cantidad)
 - DELETE /api/carrito/{id}
 - DELETE /api/carrito/clear
+
+Contributing
+- Feature template: see `CONTRIBUTING_FEATURE_TEMPLATE.md`
+- AI agent quickstart: see `.github/copilot-instructions.md`

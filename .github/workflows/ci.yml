@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-backend:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Restore
+        run: dotnet restore Pluxy3dBE/Pluxy3dBE.sln
+      - name: Build
+        run: dotnet build Pluxy3dBE/Pluxy3dBE.sln --configuration Release --no-restore
+      - name: Test (if present)
+        run: |
+          if (Test-Path 'tests') { dotnet test 'tests' --configuration Release --no-build } else { echo 'No tests folder' }
+        shell: pwsh
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pluxy3d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: pluxy3d/package.json
+      - name: Install deps
+        run: npm ci || npm i
+      - name: Type check
+        run: npm run type-check --if-present
+      - name: Lint
+        run: npm run lint --if-present || echo "lint ignored in next.config"
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test --if-present

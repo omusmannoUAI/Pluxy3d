@@ -17,7 +17,8 @@
     "test:coverage": "jest --coverage",
     "clean": "rm -rf .next out",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "cleanup": "node scripts/cleanup.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
