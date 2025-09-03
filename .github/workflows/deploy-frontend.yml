@@ -1,0 +1,119 @@
+name: Deploy Pluxy3d Frontend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pluxy3d/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-deploy-frontend:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: '20.x'
+      # Optional defaults to secrets; a resolve step will also read repo vars and write to GITHUB_ENV
+      AZURE_WEBAPP_NAME_FRONTEND: ${{ secrets.AZURE_WEBAPP_NAME_FRONTEND }}
+      AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
+      AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: pluxy3d/pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        working-directory: pluxy3d
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: pluxy3d
+        run: pnpm run build
+
+      - name: Upload build artifact (.next)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluxy3d-next-build
+          path: |
+            pluxy3d/.next
+            pluxy3d/package.json
+            pluxy3d/next.config.mjs
+            pluxy3d/.env* 
+          if-no-files-found: warn
+
+      - name: Resolve deploy environment
+        shell: bash
+        env:
+          RESOLVED_SECRET_APP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_FRONTEND }}
+          RESOLVED_VAR_APP_NAME: ${{ vars.AZURE_WEBAPP_NAME_FRONTEND }}
+          RESOLVED_PP1: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
+          RESOLVED_PP2: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
+          RESOLVED_SP: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          appName="${RESOLVED_SECRET_APP_NAME:-$RESOLVED_VAR_APP_NAME}"
+          if [ -n "$appName" ]; then echo "AZURE_WEBAPP_NAME_FRONTEND=$appName" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_PP1" ]; then echo "AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND=$RESOLVED_PP1" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_PP2" ]; then echo "AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND=$RESOLVED_PP2" >> "$GITHUB_ENV"; fi
+          if [ -n "$RESOLVED_SP" ]; then echo "AZURE_CREDENTIALS=$RESOLVED_SP" >> "$GITHUB_ENV"; fi
+
+      - name: Deploy to Vercel (if configured)
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
+        working-directory: pluxy3d
+        env:
+          VERCEL_TOKEN: ${{ env.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ env.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ env.VERCEL_PROJECT_ID }}
+        run: |
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          npx vercel build --prod --token "$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+
+      - name: Deploy to Azure Web App (Publish Profile - Frontend Secret)
+        if: ${{ env.AZURE_WEBAPP_NAME_FRONTEND != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND != '' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME_FRONTEND }}
+          publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND }}
+          package: pluxy3d
+
+      - name: Deploy to Azure Web App (Publish Profile - AppService Secret)
+        if: ${{ env.AZURE_WEBAPP_NAME_FRONTEND != '' && env.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND != '' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME_FRONTEND }}
+          publish-profile: ${{ env.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND }}
+          package: pluxy3d
+
+      - name: Azure Login (service principal) - fallback
+        if: ${{ env.AZURE_WEBAPP_NAME_FRONTEND != '' && env.AZURE_CREDENTIALS != '' && env.AZURE_WEBAPP_PUBLISH_PROFILE_FRONTEND == '' && env.AZUREAPPSERVICE_PUBLISHPROFILE_FRONTEND == '' }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ env.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App (Logged-in Context)
+        if: ${{ env.AZURE_WEBAPP_NAME_FRONTEND != '' && env.AZURE_CREDENTIALS != '' && (success()) }}
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME_FRONTEND }}
+          package: pluxy3d

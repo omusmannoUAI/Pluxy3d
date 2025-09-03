@@ -3,9 +3,16 @@ name: Deploy Pluxy3d Backend
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
       - 'Pluxy3dBE/**'
+      - 'Pluxy3dBE.Domain/**'
+      - 'Pluxy3dBE.DomainContracts/**'
+      - 'Pluxy3dBE.DalContracts/**'
+      - 'Pluxy3dBE.Repository/**'
+      - 'Pluxy3dBE/Repository/**'
+      - 'Pluxy3dBE.Entities/**'
       - '.github/workflows/deploy-backend.yml'
 
 permissions:
@@ -17,6 +24,7 @@ jobs:
     runs-on: windows-latest
     env:
       DOTNET_VERSION: '9.0.x'
+      # Optional: default to secrets; the "Resolve deploy environment" step will override via GITHUB_ENV if repo vars exist
       AZURE_WEBAPP_NAME_BACKEND: ${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}
       AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND }}
       AZUREAPPSERVICE_PUBLISHPROFILE: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
@@ -24,6 +32,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Resolve deploy environment
+        shell: pwsh
+        env:
+          RESOLVED_SECRET_APP_NAME: ${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}
+          RESOLVED_VAR_APP_NAME: ${{ vars.AZURE_WEBAPP_NAME_BACKEND }}
+          RESOLVED_PP1: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND }}
+          RESOLVED_PP2: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          RESOLVED_SP: ${{ secrets.AZURE_CREDENTIALS }}
+        run: |
+          $appName = $env:RESOLVED_SECRET_APP_NAME
+          if (-not $appName) { $appName = $env:RESOLVED_VAR_APP_NAME }
+          if ($appName) { "AZURE_WEBAPP_NAME_BACKEND=$appName" >> $env:GITHUB_ENV }
+          if ($env:RESOLVED_PP1) { "AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND=$env:RESOLVED_PP1" >> $env:GITHUB_ENV }
+          if ($env:RESOLVED_PP2) { "AZUREAPPSERVICE_PUBLISHPROFILE=$env:RESOLVED_PP2" >> $env:GITHUB_ENV }
+          if ($env:RESOLVED_SP)  { "AZURE_CREDENTIALS=$env:RESOLVED_SP" >> $env:GITHUB_ENV }
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
