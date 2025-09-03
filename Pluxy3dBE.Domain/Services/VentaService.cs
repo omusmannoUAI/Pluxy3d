@@ -152,7 +152,7 @@ public class VentaService : IVentaService
                     UsuarioId = venta.UsuarioId ?? Guid.Empty,
                     Monto = venta.Total ?? 0,
                     MedioPago = request.TipoPago,
-                    TransactionId = result.TransactionId
+                    TransactionId = result.TransactionId ?? string.Empty
                 });
             }
 
