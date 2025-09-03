@@ -42,21 +42,20 @@ jobs:
         working-directory: Pluxy3dBE
         run: dotnet publish --configuration Release --no-build -o ${{ runner.temp }}\publish
 
-      - name: Validate deploy credentials
+      - name: Validate deploy inputs
         shell: pwsh
         run: |
+          if (-not "$env:AZURE_WEBAPP_NAME_BACKEND") {
+            Write-Error "AZURE_WEBAPP_NAME_BACKEND is empty. Set the App Service name in repo secrets."
+          }
           if (-not "$env:AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND" -and -not "$env:AZUREAPPSERVICE_PUBLISHPROFILE" -and -not "$env:AZURE_CREDENTIALS") {
-            Write-Error "No deploy credentials found. Configure secret AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND or AZUREAPPSERVICE_PUBLISHPROFILE (recommended), or AZURE_CREDENTIALS (service principal JSON)."
+            Write-Error "No deploy credentials found. Set AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND or AZUREAPPSERVICE_PUBLISHPROFILE (recommended), or AZURE_CREDENTIALS (service principal JSON)."
           }
 
-      - name: Azure Login (service principal) - optional
-        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND == '' && env.AZUREAPPSERVICE_PUBLISHPROFILE == '' && env.AZURE_CREDENTIALS != '' }}
-        uses: azure/login@v2
-        with:
-          creds: ${{ env.AZURE_CREDENTIALS }}
-
       - name: Deploy to Azure Web App (Publish Profile - Backend Secret)
+        id: deploy_pp_backend
         if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND != '' }}
+        continue-on-error: true
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME_BACKEND }}
@@ -64,16 +63,31 @@ jobs:
           package: ${{ runner.temp }}\publish
 
       - name: Deploy to Azure Web App (Publish Profile - AppService Secret)
+        id: deploy_pp_appservice
         if: ${{ env.AZUREAPPSERVICE_PUBLISHPROFILE != '' }}
+        continue-on-error: true
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME_BACKEND }}
           publish-profile: ${{ env.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: ${{ runner.temp }}\publish
 
+      - name: Azure Login (service principal) - fallback
+        id: azure_login
+        if: ${{ env.AZURE_CREDENTIALS != '' && ( (env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND == '' && env.AZUREAPPSERVICE_PUBLISHPROFILE == '') || (steps.deploy_pp_backend.outcome == 'failure') || (steps.deploy_pp_appservice.outcome == 'failure') ) }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ env.AZURE_CREDENTIALS }}
+
       - name: Deploy to Azure Web App (Logged-in Context)
-        if: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE_BACKEND == '' && env.AZUREAPPSERVICE_PUBLISHPROFILE == '' && env.AZURE_CREDENTIALS != '' }}
+        if: ${{ steps.azure_login.outcome == 'success' }}
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME_BACKEND }}
           package: ${{ runner.temp }}\publish
+
+      - name: Fail if no deploy path succeeded
+        if: ${{ (steps.deploy_pp_backend.outcome != 'success') && (steps.deploy_pp_appservice.outcome != 'success') && (steps.azure_login.outcome != 'success') }}
+        shell: pwsh
+        run: |
+          Write-Error "Deployment did not run or failed. Ensure the publish profile is valid (and SCM Basic Auth is enabled) or provide AZURE_CREDENTIALS for service principal login."
