@@ -56,11 +56,12 @@ jobs:
       - name: Verify publish profile exists
         shell: pwsh
         run: |
-          if ("${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" -eq "") {
+          $publishProfile = "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}"
+          if ([string]::IsNullOrEmpty($publishProfile)) {
             Write-Error "AZUREAPPSERVICE_PUBLISHPROFILE secret is not configured"
             exit 1
           } else {
-            Write-Host "✅ Publish profile secret is configured"
+            Write-Host "✅ Publish profile secret is configured (length: $($publishProfile.Length) characters)"
           }
 
       - name: Deploy to Azure Web App
