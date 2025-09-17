@@ -91,6 +91,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'pluxy3d-api-prod'
+          app-name: 'pluxy3d-api-prod-d9h2f3gpf8cmcqd9'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: './publish'
