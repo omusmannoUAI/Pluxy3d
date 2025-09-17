@@ -8,5 +8,11 @@ namespace Pluxy3dBE.DomainContracts.DTOs
         [property: Required] string Mensaje);
 
     public record MensajeDto(int Id, string Nombre, string Email, string Mensaje, System.DateTime CreatedAt, bool Read);
-    public record PatchReadDto(int Id, bool Read);
+
+    public record PatchReadDto(
+        [property: Range(1, int.MaxValue)] int Id,
+        bool Read);
+
+    public record DeleteIdDto(
+        [property: Range(1, int.MaxValue)] int Id);
 }

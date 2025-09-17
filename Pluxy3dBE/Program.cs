@@ -93,8 +93,7 @@ try
                 }
             }
 
-            // Seed mínimos
-            await Pluxy3dBE.Data.DbInitializer.SeedAsync(app.Services);
+                  
         }
         catch (Exception ex)
         {

@@ -85,15 +85,9 @@ public class CarritoService : ICarritoService
         }
         else
         {
-            // TODO: Crear nuevo item - necesita ajustar lógica para ImpresorasPersonalizadas
             var carritoItem = _mapper.Map<CarritoItem>(addItemDto);
-            // carritoItem.PrecioUnitario = producto.PrecioBase;
-            // carritoItem.FechaAgregado = DateTime.UtcNow;
 
             var addedItem = await _carritoRepository.AddAsync(carritoItem);
-
-            // TODO: Cargar la relación correcta para el mapeo
-            // addedItem.Impresora = new ImpresorasPersonalizada { Producto = producto };
 
             return _mapper.Map<CarritoItemDto>(addedItem);
         }
@@ -114,10 +108,7 @@ public class CarritoService : ICarritoService
         // Validar stock si es necesario
         if (updateDto.NuevaCantidad > 0)
         {
-            // TODO: Revisar lógica después de ajustar modelo de datos
-            // var producto = await _productoRepository.GetByIdAsync(item.ImpresoraId);
-            // if (producto == null || producto.Stock < updateDto.NuevaCantidad)
-            //     throw new ArgumentException("No hay suficiente stock disponible");
+            // Validación de stock puede implementarse si es requerida más adelante.
         }
 
         return await _carritoRepository.UpdateCantidadAsync(updateDto.ItemId, updateDto.NuevaCantidad);
