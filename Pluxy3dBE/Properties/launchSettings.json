@@ -13,7 +13,7 @@
         "LOG_LEVEL": "Information",
         "DATABASE_CONNECTION": "Data Source=pluxy3d.db;Cache=Shared",
         "ENABLE_SWAGGER": "true",
-        "CORS_ORIGINS": "http://localhost:3000;https://localhost:3001"
+        "CORS_ORIGINS": "http://localhost:3000;http://localhost:3001;http://localhost:3002;https://localhost:3001"
       }
     },
     "https": {

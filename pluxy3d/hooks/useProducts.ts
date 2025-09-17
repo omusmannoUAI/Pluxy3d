@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { Product } from "@/lib/types"
+import { apiFetch } from "@/lib/api"
 
 export interface ProductFilters {
   category?: string
@@ -25,47 +26,65 @@ export function useProducts(initialFilters?: ProductFilters) {
         setLoading(true)
         setError(null)
 
-        // In a real app, this would be an API call
-        // For now, we'll simulate loading
-        const mockProducts: Product[] = [
-          {
-            id: 1,
-            name: "Creality Ender 3 V2",
-            description: "Impresora 3D de alta calidad",
-            price: 320000,
-            image: "/placeholder.svg",
-            category: "impresoras",
-            brand: "Creality",
-            rating: 4.5,
-            stock: "in_stock" as const
-          },
-          {
-            id: 2,
-            name: "Kit Mejora Ender-3",
-            description: "Kit completo para mejorar tu impresora",
-            price: 22750,
-            image: "/placeholder.svg",
-            category: "accesorios",
-            brand: "Creality",
-            rating: 4.2,
-            stock: "in_stock" as const
-          }
-        ]
+        // Build query parameters for API call
+        const queryParams = new URLSearchParams()
+        
+        if (filters.category) {
+          queryParams.append('category', filters.category)
+        }
+        
+        if (filters.sortBy) {
+          let apiSortBy: string = filters.sortBy
+          if (filters.sortBy === 'name') apiSortBy = 'nombre'
+          if (filters.sortBy === 'price') apiSortBy = 'precio'
+          queryParams.append('sortBy', apiSortBy)
+          queryParams.append('desc', filters.sortOrder === 'desc' ? 'true' : 'false')
+        }
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Large page size to get all products for client-side filtering
+        queryParams.append('page', '1')
+        queryParams.append('pageSize', '1000')
 
-        setProducts(mockProducts)
+        const queryString = queryParams.toString()
+        const endpoint = `/productos${queryString ? `?${queryString}` : ''}`
+        
+        const response = await apiFetch(endpoint)
+        
+        // Handle paginated response from API
+        let productItems = []
+        if (response && response.items && Array.isArray(response.items)) {
+          productItems = response.items
+        } else if (Array.isArray(response)) {
+          productItems = response
+        }
+        
+        // Map API response to frontend Product interface
+        const products: Product[] = productItems.map((item: any) => ({
+          id: item.id,
+          name: item.nombre || item.name,
+          description: item.descripcion || item.description,
+          price: Number((item.precio || item.price) ?? 0),
+          image: item.imagen || item.image || "/placeholder.svg",
+          category: item.categoria || item.category,
+          brand: item.marca || item.brand,
+          rating: Number(item.rating || item.calificacion || 0),
+          stock: item.stock || (item.cantidad > 0 ? "in_stock" : "out_of_stock")
+        }))
+
+        console.log('useProducts loaded:', products.length, products)
+        setProducts(products)
       } catch (err) {
         setError('Error al cargar productos')
         console.error('Error loading products:', err)
+        // Fallback to empty array on error
+        setProducts([])
       } finally {
         setLoading(false)
       }
     }
 
     loadProducts()
-  }, [])
+  }, []) // Remove filters dependency to load all products once
 
   // Filtered and sorted products
   const filteredProducts = useMemo(() => {

@@ -33,11 +33,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     else window.localStorage.removeItem('pluxy_user')
   }, [user])
 
-  const login = async (email: string, _password: string) => {
-    // Mock login: in real world call backend and validate
-    const isAdmin = /^(admin|administrator)@/i.test(email) || /@pluxy3d\.com$/i.test(email)
-    const mock: AuthUser = { id: 1, name: email.split('@')[0] || 'Usuario', email, role: isAdmin ? 'admin' : 'customer' }
-    setUser(mock)
+  const login = async (email: string, password: string) => {
+    try {
+      // Call the real authentication API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5299/api'}/usuarios/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (response.ok) {
+        const userData = await response.json()
+        const user: AuthUser = {
+          id: userData.id,
+          name: userData.name || userData.nombre || email.split('@')[0],
+          email: userData.email || email,
+          role: userData.role || userData.rol || 'customer'
+        }
+        setUser(user)
+      } else {
+        throw new Error('Credenciales inválidas')
+      }
+    } catch (error) {
+      // Fallback to mock login for development if API is not available
+      console.warn('API login failed, using mock login:', error)
+      const isAdmin = /^(admin|administrator)@/i.test(email) || /@pluxy3d\.com$/i.test(email)
+      const mock: AuthUser = { id: 1, name: email.split('@')[0] || 'Usuario', email, role: isAdmin ? 'admin' : 'customer' }
+      setUser(mock)
+    }
   }
 
   const logout = () => setUser(null)

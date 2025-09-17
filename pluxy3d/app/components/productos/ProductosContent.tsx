@@ -30,24 +30,32 @@ export default function ProductosContent() {
           apiFetch('/productos')
         ])
         if (Array.isArray(cats)) {
-          setCategories(cats.map((c: any) => ({ id: c.id, label: c.name, count: c.count })))
+          setCategories(cats.map((c: any) => ({ id: c.id, label: c.nombre || c.name, count: c.count })))
         }
-        if (Array.isArray(prods)) {
-          const mappedProducts = prods.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            price: Number(p.price ?? 0),
-            image: p.image,
-            category: p.category,
-            brand: p.brand
-          })) as Product[]
-          setProducts(mappedProducts)
-        } else {
-          setProducts([])
+        
+        // Handle paginated response from API
+        let productItems = []
+        if (prods && prods.items && Array.isArray(prods.items)) {
+          productItems = prods.items
+        } else if (Array.isArray(prods)) {
+          productItems = prods
         }
+
+        const mappedProducts = productItems.map((p: any) => ({
+          id: p.id,
+          name: p.nombre || p.name,
+          description: p.descripcion || p.description,
+          price: Number((p.precio || p.price) ?? 0),
+          image: p.imagen || p.image || "/placeholder.svg",
+          category: p.categoria || p.category,
+          brand: p.marca || p.brand
+        })) as Product[]
+        
+        setProducts(mappedProducts)
+        console.log('Loaded products:', mappedProducts.length, mappedProducts)
       } catch (error) {
         console.error('Error loading initial data:', error)
+        setProducts([])
       } finally {
         setLoading(false)
       }
@@ -62,20 +70,30 @@ export default function ProductosContent() {
       try {
         const categoryId = Number(activeTab)
         const data = await apiFetch(`/productos?categoryId=${categoryId}`)
-        if (Array.isArray(data)) {
-          const mapped = data.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            price: Number(p.price ?? 0),
-            image: p.image,
-            category: p.category,
-            brand: p.brand
-          })) as Product[]
-          setProducts(mapped)
+        
+        // Handle paginated response from API
+        let productItems = []
+        if (data && data.items && Array.isArray(data.items)) {
+          productItems = data.items
+        } else if (Array.isArray(data)) {
+          productItems = data
         }
+
+        const mapped = productItems.map((p: any) => ({
+          id: p.id,
+          name: p.nombre || p.name,
+          description: p.descripcion || p.description,
+          price: Number((p.precio || p.price) ?? 0),
+          image: p.imagen || p.image || "/placeholder.svg",
+          category: p.categoria || p.category,
+          brand: p.marca || p.brand
+        })) as Product[]
+        
+        setProducts(mapped)
+        console.log('Loaded category products:', mapped.length, mapped)
       } catch (e) {
         console.error('Error loading category products:', e)
+        setProducts([])
       } finally {
         setLoading(false)
       }

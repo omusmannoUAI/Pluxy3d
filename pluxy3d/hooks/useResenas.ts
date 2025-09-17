@@ -32,7 +32,9 @@ export function useResenas() {
 
   // Load initial data
   useEffect(() => {
-    // In a real app, this would fetch from API
+    // TODO: Replace with real API call when reviews endpoint is implemented
+    // Expected endpoint: apiFetch('/resenas') or apiFetch('/productos/{id}/resenas')
+    // For now using mock data for admin interface demonstration
     const seed: Review[] = [
       { id: "1", producto: "Creality Ender 3 V2", estrellas: 5, autor: "Juan Pérez", email: "juan@example.com", fecha: "2024-01-25", texto: "Excelente producto, muy buena calidad y llegó rápido.", util: 12, estado: "Aprobada" },
       { id: "2", producto: "Kit Mejora Ender-3", estrellas: 3, autor: "María García", email: "maria@example.com", fecha: "2024-01-24", texto: "Muy bueno, aunque la instalación fue un poco complicada.", util: 5, estado: "Pendiente" },

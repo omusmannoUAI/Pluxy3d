@@ -33,15 +33,44 @@ export default function ProductosPorMarcaPage() {
 	}, [categoria, marca, router])
 
 	useEffect(() => {
-		apiFetch("/productos")
-			.then((data) => {
-				setProducts(Array.isArray(data) ? data : []);
+		const loadProducts = async () => {
+			try {
+				setLoading(true);
+				setError(null);
+				const response = await apiFetch("/productos");
+				
+				// Handle paginated response from API
+				let productItems = []
+				if (response && response.items && Array.isArray(response.items)) {
+					productItems = response.items
+				} else if (Array.isArray(response)) {
+					productItems = response
+				}
+
+				// Map API response to frontend Product interface
+				const mappedProducts = productItems.map((item: any) => ({
+					id: item.id,
+					name: item.nombre || item.name,
+					description: item.descripcion || item.description,
+					price: Number((item.precio || item.price) ?? 0),
+					image: item.imagen || item.image || "/placeholder.svg",
+					category: item.categoria || item.category,
+					brand: item.marca || item.brand,
+					rating: Number(item.rating || item.calificacion || 0),
+					stock: item.stock || (item.cantidad > 0 ? "in_stock" : "out_of_stock")
+				})) as Product[]
+
+				console.log('Marca page loaded products:', mappedProducts.length, mappedProducts);
+				setProducts(mappedProducts);
 				setLoading(false);
-			})
-			.catch(() => {
+			} catch (err) {
+				console.error('Error loading products:', err);
 				setError("Error al cargar los productos");
 				setLoading(false);
-			});
+			}
+		}
+		
+		loadProducts();
 	}, []);
 
 		// Category matching tolerant to plural/"3d" variants (e.g., impresora/impresoras/impresoras-3d)
