@@ -64,12 +64,28 @@ jobs:
       - name: Verify publish profile exists
         shell: pwsh
         run: |
-          $publishProfile = "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}"
-          if ([string]::IsNullOrEmpty($publishProfile)) {
-            Write-Error "AZUREAPPSERVICE_PUBLISHPROFILE secret is not configured"
+          Write-Host "🔍 Starting publish profile verification..."
+          try {
+            $publishProfile = "${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}"
+            Write-Host "📝 Secret retrieval successful"
+            
+            if ([string]::IsNullOrEmpty($publishProfile)) {
+              Write-Error "AZUREAPPSERVICE_PUBLISHPROFILE secret is not configured"
+              exit 1
+            } else {
+              $length = $publishProfile.Length
+              Write-Host "✅ Publish profile secret is configured (length: $length characters)"
+              
+              # Verify it contains expected XML structure without outputting content
+              if ($publishProfile -like "*<publishData>*" -and $publishProfile -like "*</publishData>*") {
+                Write-Host "✅ Publish profile appears to contain valid XML structure"
+              } else {
+                Write-Warning "⚠️ Publish profile may not contain expected XML structure"
+              }
+            }
+          } catch {
+            Write-Error "❌ Error during publish profile verification: $($_.Exception.Message)"
             exit 1
-          } else {
-            Write-Host "✅ Publish profile secret is configured (length: $($publishProfile.Length) characters)"
           }
 
       - name: Deploy to Azure Web App
