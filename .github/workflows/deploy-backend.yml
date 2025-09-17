@@ -43,8 +43,8 @@ jobs:
         run: dotnet publish --configuration Release --no-build --output ./publish
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
-          app-name: 'pluxy3d-backend'
+          app-name: 'pluxy3d-api-prod'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
           package: './Pluxy3dBE/publish'
