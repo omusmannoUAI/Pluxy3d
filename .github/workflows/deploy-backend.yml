@@ -42,6 +42,16 @@ jobs:
         working-directory: Pluxy3dBE
         run: dotnet publish --configuration Release --no-build --output ./publish
 
+      - name: Verify publish profile exists
+        shell: pwsh
+        run: |
+          if ("${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}" -eq "") {
+            Write-Error "AZUREAPPSERVICE_PUBLISHPROFILE secret is not configured"
+            exit 1
+          } else {
+            Write-Host "✅ Publish profile secret is configured"
+          }
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
