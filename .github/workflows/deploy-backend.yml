@@ -56,6 +56,15 @@ jobs:
           Write-Host "Contents of publish directory:"
           if (Test-Path "./publish") {
             Get-ChildItem "./publish" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
+            Write-Host "`nChecking for main executable:"
+            if (Test-Path "./publish/Pluxy3dBE.exe") {
+              Write-Host "✅ Main executable found: Pluxy3dBE.exe"
+            } else {
+              Write-Host "❌ Main executable NOT found"
+              exit 1
+            }
+            Write-Host "`nChecking for configuration files:"
+            Get-ChildItem "./publish" -Filter "*.json" | Select-Object Name
           } else {
             Write-Error "Publish directory not found"
             exit 1
