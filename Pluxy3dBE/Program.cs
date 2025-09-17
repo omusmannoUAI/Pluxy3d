@@ -7,6 +7,7 @@ using Pluxy3dBE.Repository.Data;
 using Pluxy3dBE.Extensions;
 
 // Bootstrap Serilog (will be reconfigured with appsettings below)
+// Updated deployment with correct Azure publish profile
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
