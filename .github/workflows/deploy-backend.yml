@@ -40,7 +40,18 @@ jobs:
 
       - name: Publish
         working-directory: Pluxy3dBE
-        run: dotnet publish --configuration Release --no-build --output ./publish
+        run: dotnet publish --configuration Release --no-build --output ../publish
+
+      - name: Verify publish output
+        shell: pwsh
+        run: |
+          Write-Host "Contents of publish directory:"
+          if (Test-Path "./publish") {
+            Get-ChildItem "./publish" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
+          } else {
+            Write-Error "Publish directory not found"
+            exit 1
+          }
 
       - name: Verify publish profile exists
         shell: pwsh
@@ -53,8 +64,8 @@ jobs:
           }
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'pluxy3d-api-prod'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
-          package: './Pluxy3dBE/publish'
+          package: './publish'
