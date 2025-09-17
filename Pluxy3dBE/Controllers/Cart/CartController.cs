@@ -27,18 +27,15 @@ public class CarritoController(ICarritoService service) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Put(int id, [FromBody] UpdateCantidadRequest body)
+    public async Task<IActionResult> Put(int id, [FromBody] UpdateCarritoItemDto body)
     {
         if (body is null || body.NuevaCantidad < 1)
             return BadRequest(new { message = "NuevaCantidad debe ser >= 1" });
 
-        var ok = await service.UpdateItemCantidadAsync(new UpdateCarritoItemDto { ItemId = id, NuevaCantidad = body.NuevaCantidad });
+        // Ensure the ItemId matches the route id to avoid client mismatch
+        var dto = new UpdateCarritoItemDto { ItemId = id, NuevaCantidad = body.NuevaCantidad };
+        var ok = await service.UpdateItemCantidadAsync(dto);
         return Ok(ok);
-    }
-
-    public class UpdateCantidadRequest
-    {
-        public int NuevaCantidad { get; set; }
     }
 
     [HttpDelete("{id:int}")]
