@@ -12,7 +12,6 @@ on:
       - 'Pluxy3dBE.DalContracts/**'
       - 'Pluxy3dBE.Repository/**'
       - 'Pluxy3dBE.Entities/**'
-      - '.github/workflows/deploy-backend.yml'
 
 jobs:
   build_and_deploy_job:
