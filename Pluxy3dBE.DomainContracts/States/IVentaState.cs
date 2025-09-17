@@ -84,13 +84,13 @@ public abstract class BaseVentaState : IVentaState
 
         var previousState = StateName;
         var newState = CreateState(newStateName);
-        
+
         // Ejecutar lógica específica antes de la transición
         await OnExitingAsync(context, newStateName);
-        
+
         // Cambiar el estado
         context.SetState(newState);
-        
+
         // Ejecutar lógica específica después de la transición
         await newState.OnEnteringAsync(context, previousState);
 

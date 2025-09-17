@@ -11,7 +11,7 @@ public interface ICarritoMainRepository : IRepository<Carrito>
     /// Obtiene carrito por usuario ID - devuelve la entidad Carrito completa
     /// </summary>
     Task<Carrito?> GetCarritoByUsuarioAsync(Guid usuarioId);
-    
+
     /// <summary>
     /// Crea un nuevo carrito para un usuario
     /// </summary>

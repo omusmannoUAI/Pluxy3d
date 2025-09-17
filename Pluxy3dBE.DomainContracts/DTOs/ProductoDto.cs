@@ -23,6 +23,7 @@ public class ProductoSearchDto
 {
     public string? SearchTerm { get; set; }
     public string? Categoria { get; set; }
+    public int? CategoriaId { get; set; }
     public string? Marca { get; set; }
     public decimal? PrecioMin { get; set; }
     public decimal? PrecioMax { get; set; }
@@ -30,4 +31,6 @@ public class ProductoSearchDto
     public bool? SoloConStock { get; set; } = true;
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 10;
+    public string? SortBy { get; set; }
+    public bool Desc { get; set; } = false;
 }

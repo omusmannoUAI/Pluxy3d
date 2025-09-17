@@ -71,9 +71,11 @@ try
     // Pipeline organized in extension (includes forwarded headers, error handling, swagger in Dev, caching, cors, routing, health, controllers, root endpoint)
     app.UseApiPipeline(builder.Configuration);
 
-    // Migrar/crear esquema en el arranque
-    using (var scope = app.Services.CreateScope())
+    // Migrar/crear esquema en el arranque (configurable)
+    var applyMigrations = builder.Configuration.GetValue("ApplyMigrationsOnStartup", true);
+    if (applyMigrations)
     {
+        using var scope = app.Services.CreateScope();
         try
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContextFromDb>();
@@ -83,8 +85,12 @@ try
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Fallo al aplicar migraciones, intentando EnsureCreated");
-                await db.Database.EnsureCreatedAsync();
+                Log.Warning(ex, "Fallo al aplicar migraciones. Saltando EnsureCreated en producción.");
+                var isDevelopment = app.Environment.IsDevelopment();
+                if (isDevelopment)
+                {
+                    await db.Database.EnsureCreatedAsync();
+                }
             }
 
             // Seed mínimos
@@ -95,9 +101,6 @@ try
             Log.Warning(ex, "No se pudo asegurar la creación del esquema de base de datos");
         }
     }
-
-    // TEMPORAL: Seed comentado hasta regenerar entidades
-    //await SeedDataAsync(app);
 
     Log.Information("Pluxy3D Backend API iniciada correctamente");
     await app.RunAsync();

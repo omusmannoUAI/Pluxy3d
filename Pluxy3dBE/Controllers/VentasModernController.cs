@@ -30,8 +30,8 @@ public class VentasModernController : ControllerBase
         _ventaService = ventaService;
         _authorizationService = authorizationService;
         _commandDispatcher = commandDispatcher;
-    _logger = logger;
-    _carritoCommandFactory = carritoCommandFactory;
+        _logger = logger;
+        _carritoCommandFactory = carritoCommandFactory;
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             var request = new CreateVentaRequest
             {
                 UsuarioId = userId,
@@ -55,9 +55,9 @@ public class VentasModernController : ControllerBase
 
             // El servicio maneja toda la lógica usando patrones de diseño
             var result = await _ventaService.CreateVentaAsync(request);
-            
-            return result.IsSuccess 
-                ? Ok(new { Success = true, VentaId = result.Venta!.VentaId, Message = "Venta creada exitosamente" })
+
+            return result.IsSuccess
+                ? Ok(new { Success = true, result.Venta!.VentaId, Message = "Venta creada exitosamente" })
                 : BadRequest(new { Success = false, Error = result.ErrorMessage });
         }
         catch (Exception ex)
@@ -77,7 +77,7 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             var request = new ProcessPaymentRequest
             {
                 VentaId = ventaId,
@@ -90,9 +90,9 @@ public class VentasModernController : ControllerBase
 
             // El servicio usa Factory Pattern para seleccionar el procesador
             var result = await _ventaService.ProcessPaymentAsync(request);
-            
-            return result.IsSuccess 
-                ? Ok(new { Success = true, TransactionId = result.TransactionId, Message = "Pago procesado exitosamente" })
+
+            return result.IsSuccess
+                ? Ok(new { Success = true, result.TransactionId, Message = "Pago procesado exitosamente" })
                 : BadRequest(new { Success = false, Error = result.Message });
         }
         catch (Exception ex)
@@ -113,9 +113,9 @@ public class VentasModernController : ControllerBase
         {
             // El servicio usa State Pattern para manejar transiciones
             var result = await _ventaService.ChangeVentaStateAsync(ventaId, dto.NuevoEstado, dto.Motivo);
-            
-            return result.IsSuccess 
-                ? Ok(new { Success = true, Message = result.Message })
+
+            return result.IsSuccess
+                ? Ok(new { Success = true, result.Message })
                 : BadRequest(new { Success = false, Error = result.Message });
         }
         catch (Exception ex)
@@ -135,7 +135,7 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             var ventaFilter = filter != null ? new VentaFilter
             {
                 FechaDesde = filter.FechaDesde,
@@ -147,7 +147,7 @@ public class VentasModernController : ControllerBase
 
             // El servicio usa Strategy Pattern para autorización automática
             var ventas = await _ventaService.GetVentasAsync(userId, ventaFilter);
-            
+
             return Ok(new { Success = true, Data = ventas.Select(MapToDto) });
         }
         catch (Exception ex)
@@ -167,12 +167,12 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             // El servicio usa State Pattern + Strategy Pattern
             var result = await _ventaService.CancelVentaAsync(ventaId, userId, dto.Motivo);
-            
-            return result.IsSuccess 
-                ? Ok(new { Success = true, Message = result.Message })
+
+            return result.IsSuccess
+                ? Ok(new { Success = true, result.Message })
                 : BadRequest(new { Success = false, Error = result.Message });
         }
         catch (Exception ex)
@@ -215,8 +215,8 @@ public class VentasModernController : ControllerBase
             var command = _carritoCommandFactory.Create(action, args);
             var result = await _commandDispatcher.DispatchAsync(command);
 
-            return result.Success 
-                ? Ok(new { Success = true, Message = result.Message, Data = result.Data })
+            return result.Success
+                ? Ok(new { Success = true, result.Message, result.Data })
                 : BadRequest(new { Success = false, Error = result.Message });
         }
         catch (Exception ex)
@@ -236,10 +236,10 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             // Strategy Pattern maneja la lógica de permisos automáticamente
             var permissions = await _authorizationService.GetUserPermissionsAsync(userId);
-            
+
             return Ok(new { Success = true, Permissions = permissions });
         }
         catch (Exception ex)
@@ -259,10 +259,10 @@ public class VentasModernController : ControllerBase
         try
         {
             var userId = GetCurrentUserId();
-            
+
             // Strategy Pattern elimina completamente los IF/SWITCH
             var hasAccess = await _authorizationService.AuthorizeAsync(dto.Recurso, dto.Accion, userId);
-            
+
             return Ok(new { Success = true, HasAccess = hasAccess });
         }
         catch (Exception ex)
@@ -287,12 +287,12 @@ public class VentasModernController : ControllerBase
     {
         return new
         {
-            VentaId = venta.VentaId,
-            UsuarioId = venta.UsuarioId,
-            FechaVenta = venta.FechaVenta,
-            Total = venta.Total,
-            EstadoId = venta.EstadoId,
-            DireccionEnvioId = venta.DireccionEnvioId
+            venta.VentaId,
+            venta.UsuarioId,
+            venta.FechaVenta,
+            venta.Total,
+            venta.EstadoId,
+            venta.DireccionEnvioId
         };
     }
 }

@@ -15,6 +15,11 @@
     <ProjectReference Include="..\Pluxy3dBE.Entities\Pluxy3dBE.Entities.csproj" />
     <ProjectReference Include="..\Pluxy3dBE.DomainContracts\Pluxy3dBE.DomainContracts.csproj" />
     <ProjectReference Include="..\Pluxy3dBE.DalContracts\Pluxy3dBE.DalContracts.csproj" />
+    <ProjectReference Include="..\Pluxy3dBE.Repository\Pluxy3dBE.Repository.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
   </ItemGroup>
 
 </Project>

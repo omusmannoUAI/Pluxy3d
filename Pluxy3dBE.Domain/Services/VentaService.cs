@@ -44,7 +44,7 @@ public class VentaService : IVentaService
         _ventaStateFactory = ventaStateFactory;
         _eventPublisher = eventPublisher;
         _ventaProcessorFactory = ventaProcessorFactory;
-    _estadoVentaRepository = estadoVentaRepository;
+        _estadoVentaRepository = estadoVentaRepository;
     }
 
     /// <summary>
@@ -63,22 +63,23 @@ public class VentaService : IVentaService
             }
 
             // 2. Obtener items del carrito
-            var carritoItems = await _carritoRepository.GetByUsuarioIdAsync(request.UsuarioId.ToString());
-            if (!carritoItems.Any())
+            var carritoItemsEnumerable = await _carritoRepository.GetByUsuarioIdAsync(request.UsuarioId.ToString());
+            var carritoItems = (carritoItemsEnumerable ?? Enumerable.Empty<CarritoItem>()).ToList();
+            if (carritoItems.Count == 0)
             {
                 return VentaResult.Failure("El carrito está vacío");
             }
 
             // 3. TEMPLATE METHOD PATTERN - Procesar según tipo de productos
-            var processor = _ventaProcessorFactory.GetProcessor(carritoItems.ToList());
-            
+            var processor = _ventaProcessorFactory.GetProcessor(carritoItems);
+
             var context = new VentaProcessingContext
             {
                 UsuarioId = request.UsuarioId,
-                Items = carritoItems.ToList(),
-                DireccionEnvio = request.DireccionEnvio,
+                Items = carritoItems,
+                DireccionEnvio = request.DireccionEnvio ?? string.Empty,
                 MedioPagoId = request.MedioPagoId,
-                NotasEspeciales = request.NotasEspeciales
+                NotasEspeciales = request.NotasEspeciales ?? string.Empty
             };
 
             var processingResult = await processor.ProcessVentaAsync(context);
@@ -124,7 +125,7 @@ public class VentaService : IVentaService
 
             // FACTORY PATTERN - Obtener procesador según tipo de pago
             var processor = _paymentProcessorFactory.CreateProcessor(request.TipoPago);
-            
+
             var paymentRequest = new PaymentRequest
             {
                 Amount = venta.Total ?? 0,
@@ -139,12 +140,12 @@ public class VentaService : IVentaService
             };
 
             var result = await processor.ProcessPaymentAsync(paymentRequest);
-            
+
             if (result.IsSuccess)
             {
                 // Cambiar estado usando State Pattern
                 await ChangeVentaStateAsync(venta.VentaId, "Confirmada", "Pago procesado exitosamente");
-                
+
                 // Publicar evento usando Observer Pattern
                 await _eventPublisher.PublishAsync(new PagoConfirmadoEvent
                 {
@@ -181,13 +182,13 @@ public class VentaService : IVentaService
             // Obtener estado actual
             var estadoActual = await _estadoVentaRepository.GetNombreByIdAsync(venta.EstadoId ?? 1);
             if (string.IsNullOrWhiteSpace(estadoActual)) estadoActual = "Pendiente";
-            
+
             // STATE PATTERN - Obtener estado usando Factory
             var currentState = _ventaStateFactory.CreateState(estadoActual);
-            
+
             // Crear contexto de estado
             var context = new VentaStateContext(ventaId, currentState);
-            
+
             // Intentar transición
             var canTransition = await currentState.CanTransitionToAsync(context, nuevoEstado);
             if (!canTransition)
@@ -209,15 +210,15 @@ public class VentaService : IVentaService
 
             // Obtener nuevo estado y ejecutar acciones
             var newState = _ventaStateFactory.CreateState(nuevoEstado);
-            // Ensure we pass a non-null previous state name
-            await newState.OnEnteringAsync(context, estadoActual ?? "Pendiente");
+            // estadoActual ya está normalizado a un string no nulo
+            await newState.OnEnteringAsync(context, estadoActual);
 
             // OBSERVER PATTERN - Publicar evento
             await _eventPublisher.PublishAsync(new VentaEstadoCambiadoEvent
             {
                 VentaId = ventaId,
                 UsuarioId = venta.UsuarioId ?? Guid.Empty,
-                EstadoAnterior = estadoActual,
+                EstadoAnterior = estadoActual ?? "Pendiente",
                 EstadoNuevo = nuevoEstado,
                 MotivoCambio = motivo
             });
@@ -244,7 +245,7 @@ public class VentaService : IVentaService
 
         // Verificar si es admin (puede ver todas) o cliente (solo las suyas)
         var canViewAll = await _authorizationService.HasPermissionAsync("ventas.read.all", usuarioId);
-        
+
         if (canViewAll)
         {
             return await _ventaRepository.GetAllAsync();

@@ -38,7 +38,7 @@ public class AuthorizationService : IAuthorizationService
 
             // Obtener la estrategia apropiada usando Factory Pattern
             var strategy = _strategyFactory.CreateStrategy(userRole);
-            
+
             // Ejecutar la validación usando la estrategia
             return await strategy.CanAccessAsync(recurso, accion, usuarioId);
         }
@@ -67,7 +67,7 @@ public class AuthorizationService : IAuthorizationService
 
             // Obtener la estrategia apropiada
             var strategy = _strategyFactory.CreateStrategy(userRole);
-            
+
             // Verificar el permiso usando la estrategia
             return await strategy.HasPermissionAsync(permiso, usuarioId);
         }
@@ -92,7 +92,7 @@ public class AuthorizationService : IAuthorizationService
             }
 
             var strategy = _strategyFactory.CreateStrategy(userRole);
-            
+
             // Devolver los permisos predefinidos según el rol
             return GetPermissionsForRole(userRole);
         }
@@ -112,7 +112,7 @@ public class AuthorizationService : IAuthorizationService
         try
         {
             var usuario = await _usuarioRepository.GetByUsuarioIdAsync(usuarioId);
-            
+
             // Obtener el primer rol del usuario (asumiendo un rol por usuario)
             var roleEntity = usuario?.Rols?.FirstOrDefault();
             return roleEntity?.Nombre ?? string.Empty;
@@ -164,8 +164,8 @@ public static class AuthorizationExtensions
     /// Verificar múltiples permisos
     /// </summary>
     public static async Task<bool> HasAllPermissionsAsync(
-        this IAuthorizationService service, 
-        IEnumerable<string> permisos, 
+        this IAuthorizationService service,
+        IEnumerable<string> permisos,
         Guid usuarioId)
     {
         foreach (var permiso in permisos)
@@ -182,8 +182,8 @@ public static class AuthorizationExtensions
     /// Verificar si tiene al menos uno de los permisos
     /// </summary>
     public static async Task<bool> HasAnyPermissionAsync(
-        this IAuthorizationService service, 
-        IEnumerable<string> permisos, 
+        this IAuthorizationService service,
+        IEnumerable<string> permisos,
         Guid usuarioId)
     {
         foreach (var permiso in permisos)

@@ -344,7 +344,7 @@ public class CommandDispatcher : ICommandDispatcher
     {
         var commandType = command.GetType();
         var handlerType = typeof(ICommandHandler<,>).MakeGenericType(commandType, typeof(TResult));
-        
+
         var handler = _serviceProvider.GetService(handlerType);
         if (handler == null)
         {
