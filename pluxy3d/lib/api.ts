@@ -64,8 +64,8 @@ setInterval(() => apiCache.cleanup(), 10 * 60 * 1000)
 const inFlight = new Map<string, Promise<any>>();
 
 export async function apiFetch(endpoint: string, options?: RequestInit & { cache?: boolean, ttl?: number }) {
-  const key = `${options?.method || 'GET'} ${endpoint}`;
-  const shouldCache = options?.cache !== false && (options?.method || 'GET') === 'GET'
+  const key = `${options?.method || 'GET'} ${endpoint}`; 
+  const shouldCache = options?.cache !== false && (options?.method || 'GET') === 'GET' 
 
   // Verificar cache primero
   if (shouldCache) {
@@ -75,37 +75,57 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
 
   if (inFlight.has(key)) return inFlight.get(key);
 
-  const p = (async () => {
-    try {
-      // Crear AbortController para timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 segundos timeout
+  const p = (async () => { 
+    try { 
+      // Crear AbortController para timeout 
+      const maxRetries = 2
+      const startAll = Date.now()
+      let lastErr: any
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 segundos timeout
+        try {
+          const fetchOptions = {
+            ...options,
+            signal: controller.signal
+          }
 
-      const fetchOptions = {
-        ...options,
-        signal: controller.signal
+          const res = await fetch(`${API_URL}${endpoint}`, fetchOptions)
+          clearTimeout(timeoutId)
+          if (!res.ok) {
+            lastErr = new Error(`API error ${res.status}`)
+          } else {
+            const data = await res.json()
+            // Log de latencia (dev only)
+            if (process.env.NODE_ENV !== 'production') {
+              // eslint-disable-next-line no-console
+              console.debug(`[apiFetch] ${endpoint} in ${Date.now() - startAll}ms`)
+            }
+            // Cachear respuesta exitosa 
+            if (shouldCache) { 
+              apiCache.set(key, data, options?.ttl) 
+            } 
+            return data
+          }
+        } catch (err: any) {
+          lastErr = err
+        } finally {
+          clearTimeout(timeoutId)
+        }
+        // backoff simple
+        await new Promise(r => setTimeout(r, 150 * (attempt + 1)))
       }
 
-      const res = await fetch(`${API_URL}${endpoint}`, fetchOptions);
-      clearTimeout(timeoutId)
-
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-
-      // Cachear respuesta exitosa
-      if (shouldCache) {
-        apiCache.set(key, data, options?.ttl)
-      }
-
-      return data;
-    } catch (error) {
-      // Si es un timeout o error de red, usar fallback inmediatamente
-      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) {
-        console.warn(`API timeout/network error for ${endpoint}, using fallback`)
-        // Fallbacks por endpoint
-        if (endpoint.startsWith('/carrito')) return [];
-        if (endpoint.startsWith('/productos')) return [];
-      }
+      // Si llega aquí, todos los intentos fallaron
+      throw lastErr ?? new Error('API request failed')
+    } catch (error) { 
+      // Si es un timeout o error de red, usar fallback inmediatamente 
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) { 
+        console.warn(`API timeout/network error for ${endpoint}, using fallback`) 
+        // Fallbacks por endpoint 
+        if (endpoint.startsWith('/carrito')) return []; 
+        if (endpoint.startsWith('/productos')) return []; 
+      } 
 
       // Fallbacks por endpoint para otros errores también
       if (endpoint.startsWith('/carrito')) return [];
@@ -115,7 +135,7 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
       // Clear in-flight entry once settled
       inFlight.delete(key);
     }
-  })();
+  })(); 
 
   inFlight.set(key, p);
   return p;

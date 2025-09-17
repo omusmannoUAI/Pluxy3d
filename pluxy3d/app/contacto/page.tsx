@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast" 
+import { apiFetch } from "@/lib/api"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -21,12 +22,11 @@ export default function ContactoPage() {
     }
     try {
       setLoading(true)
-      const res = await fetch("/api/contacto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      })
-      if (!res.ok) throw new Error("No se pudo enviar")
+      await apiFetch('/contacto', { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(form) 
+      }) 
       toast({ title: "Enviado", description: "Gracias por contactarnos." })
       setForm({ nombre: "", email: "", mensaje: "" })
     } catch (e: any) {

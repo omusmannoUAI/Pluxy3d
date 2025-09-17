@@ -117,7 +117,7 @@ public class CreditCardProcessor : IPaymentProcessor
     public async Task<PaymentResult> RefundPaymentAsync(string transactionId, decimal amount)
     {
         await Task.Delay(500);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -131,7 +131,7 @@ public class CreditCardProcessor : IPaymentProcessor
     public async Task<PaymentResult> GetPaymentStatusAsync(string transactionId)
     {
         await Task.Delay(200);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -155,7 +155,7 @@ public class MercadoPagoProcessor : IPaymentProcessor
         await Task.Delay(800);
 
         var email = request.PaymentData.GetValueOrDefault("email")?.ToString();
-        
+
         if (string.IsNullOrEmpty(email))
         {
             return new PaymentResult
@@ -184,7 +184,7 @@ public class MercadoPagoProcessor : IPaymentProcessor
     public async Task<PaymentResult> RefundPaymentAsync(string transactionId, decimal amount)
     {
         await Task.Delay(600);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -198,7 +198,7 @@ public class MercadoPagoProcessor : IPaymentProcessor
     public async Task<PaymentResult> GetPaymentStatusAsync(string transactionId)
     {
         await Task.Delay(300);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -222,7 +222,7 @@ public class BankTransferProcessor : IPaymentProcessor
         await Task.Delay(1200);
 
         var bankAccount = request.PaymentData.GetValueOrDefault("bankAccount")?.ToString();
-        
+
         if (string.IsNullOrEmpty(bankAccount))
         {
             return new PaymentResult
@@ -251,7 +251,7 @@ public class BankTransferProcessor : IPaymentProcessor
     public async Task<PaymentResult> RefundPaymentAsync(string transactionId, decimal amount)
     {
         await Task.Delay(1000);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -265,7 +265,7 @@ public class BankTransferProcessor : IPaymentProcessor
     public async Task<PaymentResult> GetPaymentStatusAsync(string transactionId)
     {
         await Task.Delay(400);
-        
+
         return new PaymentResult
         {
             Success = true,
@@ -327,7 +327,7 @@ public class PaymentProcessorFactory : IPaymentProcessorFactory
         {
             return CreateProcessor(processorType);
         }
-        
+
         throw new ArgumentException($"No hay procesador configurado para el medio de pago ID: {medioPagoId}");
     }
 }

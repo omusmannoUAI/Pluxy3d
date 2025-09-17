@@ -43,7 +43,7 @@ public abstract class VentaProcessingTemplate
     public async Task<VentaProcessingResult> ProcessVentaAsync(VentaProcessingContext context)
     {
         var result = new VentaProcessingResult();
-        
+
         try
         {
             // 1. Validar request
@@ -61,7 +61,7 @@ public abstract class VentaProcessingTemplate
 
             result.IsSuccess = true;
             result.Venta = venta;
-            
+
             return result;
         }
         catch (Exception ex)
@@ -145,8 +145,8 @@ public class VentaProcessorFactory
     public VentaProcessingTemplate GetProcessor(List<CarritoItem> items)
     {
         var hasCustomProducts = items.Any(i => i.ImpresoraId > 1000);
-        
-        return hasCustomProducts 
+
+        return hasCustomProducts
             ? new CustomVentaProcessor(_eventPublisher)
             : new StandardVentaProcessor(_eventPublisher);
     }

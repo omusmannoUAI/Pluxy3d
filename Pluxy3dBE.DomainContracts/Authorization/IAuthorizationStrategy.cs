@@ -123,8 +123,8 @@ public class AuthorizationStrategyFactory : IAuthorizationStrategyFactory
 
     public IAuthorizationStrategy CreateStrategy(string roleName)
     {
-        return _strategies.TryGetValue(roleName, out var strategy) 
-            ? strategy 
+        return _strategies.TryGetValue(roleName, out var strategy)
+            ? strategy
             : throw new ArgumentException($"No existe estrategia para el rol: {roleName}");
     }
 

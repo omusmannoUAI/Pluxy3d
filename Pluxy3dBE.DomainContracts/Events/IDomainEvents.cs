@@ -106,7 +106,7 @@ public interface IDomainEventHandler<TEvent> where TEvent : IDomainEvent
 /// <summary>
 /// Notificador de email para eventos de venta
 /// </summary>
-public class EmailNotificationHandler : 
+public class EmailNotificationHandler :
     IDomainEventHandler<VentaCreadaEvent>,
     IDomainEventHandler<VentaEstadoCambiadoEvent>,
     IDomainEventHandler<PagoConfirmadoEvent>,
@@ -119,48 +119,48 @@ public class EmailNotificationHandler :
     {
         // Simular envío de email de confirmación de venta
         await Task.Delay(100);
-        
+
         var subject = $"Confirmación de Venta #{domainEvent.VentaId}";
         var body = $"Su venta por ${domainEvent.MontoTotal:C} ha sido creada exitosamente.";
-        
+
         await SendEmailAsync(domainEvent.UsuarioId, subject, body);
-        
+
         Console.WriteLine($"[EMAIL] Venta creada - Usuario: {domainEvent.UsuarioId}, Venta: {domainEvent.VentaId}");
     }
 
     public async Task HandleAsync(VentaEstadoCambiadoEvent domainEvent)
     {
         await Task.Delay(100);
-        
+
         var subject = $"Actualización de Venta #{domainEvent.VentaId}";
         var body = $"Su venta ha cambiado de estado: {domainEvent.EstadoAnterior} → {domainEvent.EstadoNuevo}";
-        
+
         await SendEmailAsync(domainEvent.UsuarioId, subject, body);
-        
+
         Console.WriteLine($"[EMAIL] Estado cambiado - Venta: {domainEvent.VentaId}, Estado: {domainEvent.EstadoNuevo}");
     }
 
     public async Task HandleAsync(PagoConfirmadoEvent domainEvent)
     {
         await Task.Delay(100);
-        
+
         var subject = $"Pago Confirmado - Venta #{domainEvent.VentaId}";
         var body = $"Su pago de ${domainEvent.Monto:C} ha sido confirmado. Método: {domainEvent.MedioPago}";
-        
+
         await SendEmailAsync(domainEvent.UsuarioId, subject, body);
-        
+
         Console.WriteLine($"[EMAIL] Pago confirmado - Venta: {domainEvent.VentaId}, Monto: {domainEvent.Monto:C}");
     }
 
     public async Task HandleAsync(VentaEnviadaEvent domainEvent)
     {
         await Task.Delay(100);
-        
+
         var subject = $"Venta Enviada #{domainEvent.VentaId}";
         var body = $"Su pedido ha sido enviado. Número de seguimiento: {domainEvent.NumeroTracking}";
-        
+
         await SendEmailAsync(domainEvent.UsuarioId, subject, body);
-        
+
         Console.WriteLine($"[EMAIL] Venta enviada - Tracking: {domainEvent.NumeroTracking}");
     }
 
@@ -174,7 +174,7 @@ public class EmailNotificationHandler :
 /// <summary>
 /// Handler para notificaciones push/SMS
 /// </summary>
-public class PushNotificationHandler : 
+public class PushNotificationHandler :
     IDomainEventHandler<VentaEstadoCambiadoEvent>,
     IDomainEventHandler<VentaEnviadaEvent>
 {
@@ -184,20 +184,20 @@ public class PushNotificationHandler :
     public async Task HandleAsync(VentaEstadoCambiadoEvent domainEvent)
     {
         await Task.Delay(50);
-        
+
         var mensaje = GetMensajeParaEstado(domainEvent.EstadoNuevo, domainEvent.VentaId);
         await SendPushNotificationAsync(domainEvent.UsuarioId, mensaje);
-        
+
         Console.WriteLine($"[PUSH] Estado cambiado - Usuario: {domainEvent.UsuarioId}, Mensaje: {mensaje}");
     }
 
     public async Task HandleAsync(VentaEnviadaEvent domainEvent)
     {
         await Task.Delay(50);
-        
+
         var mensaje = $"📦 Tu pedido #{domainEvent.VentaId} está en camino! Tracking: {domainEvent.NumeroTracking}";
         await SendPushNotificationAsync(domainEvent.UsuarioId, mensaje);
-        
+
         Console.WriteLine($"[PUSH] Venta enviada - Usuario: {domainEvent.UsuarioId}");
     }
 
@@ -223,7 +223,7 @@ public class PushNotificationHandler :
 /// <summary>
 /// Handler para auditoría y logging
 /// </summary>
-public class AuditLogHandler : 
+public class AuditLogHandler :
     IDomainEventHandler<VentaCreadaEvent>,
     IDomainEventHandler<VentaEstadoCambiadoEvent>,
     IDomainEventHandler<PagoConfirmadoEvent>
@@ -234,17 +234,17 @@ public class AuditLogHandler :
     public async Task HandleAsync(VentaCreadaEvent domainEvent)
     {
         await Task.Delay(10);
-        
+
         var logEntry = new
         {
-            EventType = domainEvent.EventType,
-            VentaId = domainEvent.VentaId,
-            UsuarioId = domainEvent.UsuarioId,
-            MontoTotal = domainEvent.MontoTotal,
+            domainEvent.EventType,
+            domainEvent.VentaId,
+            domainEvent.UsuarioId,
+            domainEvent.MontoTotal,
             Timestamp = domainEvent.OccurredAt,
             DetallesCount = domainEvent.Detalles.Count
         };
-        
+
         await LogToSystemAsync("VENTA_CREADA", logEntry);
         Console.WriteLine($"[AUDIT] Venta creada - {logEntry}");
     }
@@ -252,18 +252,18 @@ public class AuditLogHandler :
     public async Task HandleAsync(VentaEstadoCambiadoEvent domainEvent)
     {
         await Task.Delay(10);
-        
+
         var logEntry = new
         {
-            EventType = domainEvent.EventType,
-            VentaId = domainEvent.VentaId,
-            UsuarioId = domainEvent.UsuarioId,
-            EstadoAnterior = domainEvent.EstadoAnterior,
-            EstadoNuevo = domainEvent.EstadoNuevo,
-            MotivoCambio = domainEvent.MotivoCambio,
+            domainEvent.EventType,
+            domainEvent.VentaId,
+            domainEvent.UsuarioId,
+            domainEvent.EstadoAnterior,
+            domainEvent.EstadoNuevo,
+            domainEvent.MotivoCambio,
             Timestamp = domainEvent.OccurredAt
         };
-        
+
         await LogToSystemAsync("VENTA_ESTADO_CAMBIO", logEntry);
         Console.WriteLine($"[AUDIT] Estado cambiado - {logEntry}");
     }
@@ -271,18 +271,18 @@ public class AuditLogHandler :
     public async Task HandleAsync(PagoConfirmadoEvent domainEvent)
     {
         await Task.Delay(10);
-        
+
         var logEntry = new
         {
-            EventType = domainEvent.EventType,
-            VentaId = domainEvent.VentaId,
-            UsuarioId = domainEvent.UsuarioId,
-            Monto = domainEvent.Monto,
-            MedioPago = domainEvent.MedioPago,
-            TransactionId = domainEvent.TransactionId,
+            domainEvent.EventType,
+            domainEvent.VentaId,
+            domainEvent.UsuarioId,
+            domainEvent.Monto,
+            domainEvent.MedioPago,
+            domainEvent.TransactionId,
             Timestamp = domainEvent.OccurredAt
         };
-        
+
         await LogToSystemAsync("PAGO_CONFIRMADO", logEntry);
         Console.WriteLine($"[AUDIT] Pago confirmado - {logEntry}");
     }
@@ -315,7 +315,7 @@ public class DomainEventPublisher : IDomainEventPublisher
     public async Task PublishAsync<TEvent>(TEvent domainEvent) where TEvent : IDomainEvent
     {
         var eventType = typeof(TEvent);
-        
+
         if (_handlers.TryGetValue(eventType, out var handlers))
         {
             var typedHandlers = handlers.Cast<IDomainEventHandler<TEvent>>()
@@ -339,19 +339,19 @@ public class DomainEventPublisher : IDomainEventPublisher
     public void Subscribe<TEvent>(IDomainEventHandler<TEvent> handler) where TEvent : IDomainEvent
     {
         var eventType = typeof(TEvent);
-        
+
         if (!_handlers.ContainsKey(eventType))
         {
             _handlers[eventType] = new List<object>();
         }
-        
+
         _handlers[eventType].Add(handler);
     }
 
     public void Unsubscribe<TEvent>(IDomainEventHandler<TEvent> handler) where TEvent : IDomainEvent
     {
         var eventType = typeof(TEvent);
-        
+
         if (_handlers.TryGetValue(eventType, out var handlers))
         {
             handlers.Remove(handler);

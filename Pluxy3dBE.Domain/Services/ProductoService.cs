@@ -36,7 +36,7 @@ public class ProductoService : IProductoService
     {
         IEnumerable<Producto> productos;
 
-        // Aplicar filtros de búsqueda
+        // Fuente inicial según filtros principales
         if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
         {
             productos = await _productoRepository.SearchAsync(searchDto.SearchTerm);
@@ -55,26 +55,47 @@ public class ProductoService : IProductoService
         }
         else
         {
-            productos = searchDto.SoloActivos == true 
+            productos = searchDto.SoloActivos == true
                 ? await _productoRepository.GetActiveProductsAsync()
                 : await _productoRepository.GetAllAsync();
         }
 
-        // Filtros adicionales
-        if (searchDto.SoloConStock == true)
-        {
-            productos = productos.Where(p => p.Stock > 0);
-        }
+        // Filtros adicionales en memoria (rápido de integrar; mover a DB si es necesario)
+        if (searchDto.CategoriaId.HasValue)
+            productos = productos.Where(p => p.CategoriaId == searchDto.CategoriaId);
 
-        if (searchDto.PrecioMin.HasValue && searchDto.PrecioMax.HasValue)
+        if (searchDto.SoloConStock == true)
+            productos = productos.Where(p => (p.Stock ?? 0) > 0);
+
+        if (searchDto.PrecioMin.HasValue)
+            productos = productos.Where(p => (p.PrecioBase ?? 0) >= searchDto.PrecioMin);
+
+        if (searchDto.PrecioMax.HasValue)
+            productos = productos.Where(p => (p.PrecioBase ?? 0) <= searchDto.PrecioMax);
+
+        // Ordenamiento seguro por whitelist
+        var sortBy = (searchDto.SortBy ?? string.Empty).Trim().ToLowerInvariant();
+        bool desc = searchDto.Desc;
+        productos = sortBy switch
         {
-            productos = productos.Where(p => p.PrecioBase >= searchDto.PrecioMin && p.PrecioBase <= searchDto.PrecioMax);
-        }
+            "precio" => desc
+                ? productos.OrderByDescending(p => p.PrecioBase ?? 0)
+                : productos.OrderBy(p => p.PrecioBase ?? 0),
+            "stock" => desc
+                ? productos.OrderByDescending(p => p.Stock ?? 0)
+                : productos.OrderBy(p => p.Stock ?? 0),
+            "id" => desc
+                ? productos.OrderByDescending(p => p.ProductoId)
+                : productos.OrderBy(p => p.ProductoId),
+            _ => desc
+                ? productos.OrderByDescending(p => p.Nombre ?? string.Empty)
+                : productos.OrderBy(p => p.Nombre ?? string.Empty)
+        };
 
         // Paginación
         var totalCount = productos.Count();
         var pagedProductos = productos
-            .Skip((searchDto.Page - 1) * searchDto.PageSize)
+            .Skip(Math.Max(0, (searchDto.Page - 1) * searchDto.PageSize))
             .Take(searchDto.PageSize)
             .ToList();
 
@@ -92,7 +113,7 @@ public class ProductoService : IProductoService
     public async Task<ProductoDto> CreateProductoAsync(CreateUpdateProductoDto createDto)
     {
         var producto = _mapper.Map<Producto>(createDto);
-        
+
         var createdProducto = await _productoRepository.AddAsync(producto);
         return _mapper.Map<ProductoDto>(createdProducto);
     }
@@ -149,3 +170,4 @@ public class ProductoService : IProductoService
         return await _productoRepository.UpdateStockAsync(productoId, nuevoStock);
     }
 }
+

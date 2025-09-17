@@ -13,7 +13,7 @@ public class GlobalExceptionMiddleware
     private readonly IWebHostEnvironment _environment;
 
     public GlobalExceptionMiddleware(
-        RequestDelegate next, 
+        RequestDelegate next,
         ILogger<GlobalExceptionMiddleware> logger,
         IWebHostEnvironment environment)
     {
@@ -38,7 +38,7 @@ public class GlobalExceptionMiddleware
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        
+
         // Personalizar el código de estado según el tipo de excepción
         context.Response.StatusCode = exception switch
         {

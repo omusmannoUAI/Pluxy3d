@@ -263,11 +263,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (quantity < 1) return
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      await apiFetch(`/carrito/${itemId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quantity)
-      })
+      await apiFetch(`/carrito/${itemId}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ NuevaCantidad: quantity }) 
+      }) 
       dispatch({ type: 'UPDATE_ITEM', payload: { id: itemId, quantity } })
     } catch (error) {
       console.error('Error updating quantity:', error)

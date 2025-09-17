@@ -16,7 +16,7 @@ public class CarritoService : ICarritoService
     private readonly IMapper _mapper;
 
     public CarritoService(
-        ICarritoRepository carritoRepository, 
+        ICarritoRepository carritoRepository,
         IProductoRepository productoRepository,
         IMapper mapper)
     {
@@ -43,7 +43,7 @@ public class CarritoService : ICarritoService
         }
 
         var itemsDto = _mapper.Map<List<CarritoItemDto>>(items);
-        
+
         return new CarritoDto
         {
             Items = itemsDto,
@@ -67,8 +67,8 @@ public class CarritoService : ICarritoService
 
         // Verificar si ya existe el item en el carrito
         var existingItem = await _carritoRepository.GetItemAsync(
-            addItemDto.ImpresoraId, 
-            addItemDto.UsuarioId, 
+            addItemDto.ImpresoraId,
+            addItemDto.UsuarioId,
             addItemDto.SessionId);
 
         if (existingItem != null)
@@ -80,7 +80,7 @@ public class CarritoService : ICarritoService
 
             existingItem.Cantidad = newQuantity;
             await _carritoRepository.UpdateAsync(existingItem);
-            
+
             return _mapper.Map<CarritoItemDto>(existingItem);
         }
         else
@@ -91,10 +91,10 @@ public class CarritoService : ICarritoService
             // carritoItem.FechaAgregado = DateTime.UtcNow;
 
             var addedItem = await _carritoRepository.AddAsync(carritoItem);
-            
+
             // TODO: Cargar la relación correcta para el mapeo
             // addedItem.Impresora = new ImpresorasPersonalizada { Producto = producto };
-            
+
             return _mapper.Map<CarritoItemDto>(addedItem);
         }
     }
