@@ -1,43 +1,88 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.RateLimiting;
-using Pluxy3dBE.Repository.Data;
+﻿using Microsoft.AspNetCore.Mvc;
+using Pluxy3dBE.DomainContracts.Services;
 using Pluxy3dBE.DomainContracts.DTOs;
 
 namespace Pluxy3dBE.Controllers;
 
 [ApiController]
-[Route("api/contacto")]
+[Route("api/contactos")]
+[Produces("application/json")]
 public class ContactoController : ControllerBase
 {
-    private readonly Pluxy3dBE.DomainContracts.Services.IContactoService _contactoService;
+    private readonly IContactoService _contactoService;
+    private readonly ILogger<ContactoController> _logger;
 
-    public ContactoController(Pluxy3dBE.DomainContracts.Services.IContactoService contactoService)
+    public ContactoController(IContactoService contactoService, ILogger<ContactoController> logger)
     {
         _contactoService = contactoService;
+        _logger = logger;
     }
 
     [HttpPost]
-    [EnableRateLimiting("contacto-write")]
-    public async Task<IActionResult> Post([FromBody] Pluxy3dBE.DomainContracts.DTOs.CreateMensajeDto dto)
+    public async Task<IActionResult> CreateContacto([FromBody] CreateMensajeDto dto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        try
+        {
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Invalid contact creation request");
+                return BadRequest(ModelState);
+            }
 
-        var id = await _contactoService.CreateAsync(dto);
-        return CreatedAtAction(nameof(Get), new { id }, new { ok = true });
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            _logger.LogInformation("Contact creation from IP: {IpAddress}", ipAddress);
+
+            var id = await _contactoService.CreateAsync(dto);
+            _logger.LogInformation("Contact created with ID: {ContactId}", id);
+            
+            return CreatedAtAction(nameof(GetContacto), new { id }, new { contactId = id });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating contact");
+            return BadRequest(new { error = "Error al crear contacto" });
+        }
     }
 
     [HttpGet]
-    [EnableRateLimiting("contacto-read")]
-    public async Task<IActionResult> Get()
+    public async Task<IActionResult> GetContactos()
     {
-        var list = await _contactoService.GetAllAsync();
-        return Ok(list);
+        try
+        {
+            var contacts = await _contactoService.GetAllAsync();
+            return Ok(contacts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving contacts");
+            return BadRequest(new { error = "Error al obtener contactos" });
+        }
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetContacto(int id)
+    {
+        try
+        {
+            var contacts = await _contactoService.GetAllAsync();
+            var contact = contacts.FirstOrDefault(c => c.Id == id);
+
+            if (contact == null)
+            {
+                return NotFound(new { error = "Contacto no encontrado" });
+            }
+
+            return Ok(contact);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting contact {ContactId}", id);
+            return BadRequest(new { error = "Error al obtener contacto" });
+        }
     }
 
     [HttpPatch]
-    [EnableRateLimiting("contacto-write")]
-    public async Task<IActionResult> Patch([FromBody] Pluxy3dBE.DomainContracts.DTOs.PatchReadDto dto)
+    public async Task<IActionResult> Patch([FromBody] PatchReadDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -47,8 +92,7 @@ public class ContactoController : ControllerBase
     }
 
     [HttpDelete]
-    [EnableRateLimiting("contacto-write")]
-    public async Task<IActionResult> Delete([FromQuery] Pluxy3dBE.DomainContracts.DTOs.DeleteIdDto dto)
+    public async Task<IActionResult> Delete([FromQuery] DeleteIdDto dto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 

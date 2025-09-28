@@ -3,7 +3,7 @@ using Pluxy3dBE.Entities;
 namespace Pluxy3dBE.DalContracts;
 
 /// <summary>
-/// Contrato específico para el repositorio de productos
+/// Product repository interface with basic querying capabilities
 /// </summary>
 public interface IProductoRepository : IRepository<Producto>
 {
