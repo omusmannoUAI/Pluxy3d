@@ -23,13 +23,13 @@ async function fetchProduct(id: string): Promise<Product | null> {
   if (!p) return null
   const mapped: Product = {
     id: Number(p.id),
-    name: String(p.name ?? p.titulo ?? "Producto"),
-    description: String(p.description ?? p.descripcion ?? ""),
-    price: Number(p.price ?? p.precio ?? 0),
-    image: String(p.image ?? p.imagen ?? "/placeholder.svg"),
+    name: String(p.nombre || p.Nombre || p.name || p.titulo || "Producto"),
+    description: String(p.descripcion || p.Descripcion || p.description || ""),
+    price: Number(p.precio || p.Precio || p.price || 0),
+    image: String(p.imagen || p.Image || p.image || "/placeholder.svg"),
     images: Array.isArray(p.images) ? p.images.map((x: any) => String(x)) : undefined,
-    category: String(p.category ?? p.categoria ?? ""),
-    brand: String(p.brand ?? p.marca ?? ""),
+    category: String(p.categoria || p.Categoria || p.category || ""),
+    brand: String(p.marca || p.Marca || p.brand || ""),
     rating: typeof p.rating === 'number' ? p.rating : undefined,
     reviewsCount: typeof p.reviewsCount === 'number' ? p.reviewsCount : undefined,
     stock: typeof p.stock === 'string' ? p.stock : undefined,
@@ -46,12 +46,12 @@ async function fetchRelatedProducts(base: Product, limit = 6): Promise<Product[]
   if (!Array.isArray(list)) return []
   const normalized = list.map((p: any) => ({
     id: Number(p.id),
-    name: String(p.name ?? p.titulo ?? "Producto"),
-    description: String(p.description ?? p.descripcion ?? ""),
-    price: Number(p.price ?? p.precio ?? 0),
-    image: String(p.image ?? p.imagen ?? "/placeholder.svg"),
-    category: String(p.category ?? p.categoria ?? ""),
-    brand: String(p.brand ?? p.marca ?? ""),
+    name: String(p.nombre || p.Nombre || p.name || p.titulo || "Producto"),
+    description: String(p.descripcion || p.Descripcion || p.description || ""),
+    price: Number(p.precio || p.Precio || p.price || 0),
+    image: String(p.imagen || p.Image || p.image || "/placeholder.svg"),
+    category: String(p.categoria || p.Categoria || p.category || ""),
+    brand: String(p.marca || p.Marca || p.brand || ""),
   })) as Product[]
 
   const baseBrand = slugify(base.brand || '')

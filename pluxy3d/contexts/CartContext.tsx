@@ -157,12 +157,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             if (Array.isArray(data) && data.length > 0 && isMounted) {
               const mapped = data.map((d: any) => ({
                 id: d.id,
-                productId: d.productId,
-                name: d.name,
-                description: d.description,
-                price: Number(d.price ?? 0),
-                image: d.image,
-                quantity: Number(d.quantity ?? 1),
+                productId: d.impresoraId || d.ImpresoraId,
+                name: d.productoNombre || d.ProductoNombre,
+                description: d.descripcion || d.Descripcion,
+                price: Number(d.precioUnitario || d.PrecioUnitario || 0),
+                image: d.productoImage || d.ProductoImage,
+                quantity: Number(d.cantidad || d.Cantidad || 1),
               })) as CartItem[]
               dispatch({ type: 'SET_ITEMS', payload: mapped })
             }
@@ -209,12 +209,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const data = await apiFetch('/carrito')
       const mapped = Array.isArray(data) ? data.map((d: any) => ({
         id: d.id,
-        productId: d.productId,
-        name: d.name,
-        description: d.description,
-        price: Number(d.price ?? 0),
-        image: d.image,
-        quantity: Number(d.quantity ?? 1),
+        productId: d.impresoraId || d.ImpresoraId,
+        name: d.productoNombre || d.ProductoNombre,
+        description: d.descripcion || d.Descripcion,
+        price: Number(d.precioUnitario || d.PrecioUnitario || 0),
+        image: d.productoImage || d.ProductoImage,
+        quantity: Number(d.cantidad || d.Cantidad || 1),
       })) as CartItem[] : []
 
       // Solo actualizar si los datos realmente cambiaron
@@ -233,7 +233,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = useCallback(async (product: Product, quantity: number = 1) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true })
-      const cartItemDto = { productId: product.id, quantity }
+      const cartItemDto = { ImpresoraId: product.id, Cantidad: quantity }
       await apiFetch('/carrito', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

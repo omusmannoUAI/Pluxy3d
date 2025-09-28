@@ -1,6 +1,12 @@
 # Pluxy3D – AI contributor quickstart
 
-Purpose: give AI coding agents the minimal but specific context to be productive across this monorepo (Next.js frontend + .NET backend).
+Purpose: give ## Integration notes and gotchas
+- DI errors: if you see "Cannot resolve parameter ... IVentaRepository", ensure both MS DI and Autofac registrations exist where required (see `Program.cs` custom registrations and `ServiceCollectionExtensions` AddScoped lines).
+- Database provider: when `ConnectionStrings:DefaultConnection` looks like `Data Source=...`, the app selects SQLite; otherwise SQL Server (with retry enabled). Keep PendingModelChanges warnings muted via `RelationalEventId.PendingModelChangesWarning` as per current setup.
+- Frontend fallbacks: `lib/api.ts` returns empty arrays on timeouts/network errors for `/carrito` and `/productos`. Don't assume non-empty responses in UI components.
+- CORS: Allowed origins come from `Cors:AllowedOrigins` in config; in dev, it falls back to AllowAnyOrigin.
+- Cart state: `CartContext` loads from localStorage immediately, then syncs with backend in background. Use `refreshCart()` for manual sync.
+- API caching: `apiFetch` caches GET responses for 5 minutes by default; use `clearApiCache()` to clear manually.ding agents the minimal but specific context to be productive across this monorepo (Next.js frontend + .NET backend).
 
 ## Architecture and boundaries
 - Repos root contains two active apps:
@@ -25,6 +31,7 @@ Purpose: give AI coding agents the minimal but specific context to be productive
   - Run: from `pluxy3d/` use `npm i` (or pnpm) then `npm run dev` (Next.js at http://localhost:3000).
   - API base: `NEXT_PUBLIC_API_URL` must point to backend base, e.g. `http://localhost:5299/api` (see `pluxy3d/README_USERS.md`). Some files hardcode `API_URL` in `lib/api.ts` for local dev.
   - Tests: `npm test` uses Jest + jsdom, configs in `jest.config.js` and `jest.setup.js`.
+  - Build: `next.config.mjs` ignores TypeScript and ESLint errors during build for DX; production enables chunk splitting and cache headers.
 
 ## Project conventions and patterns
 - Backend
@@ -34,10 +41,13 @@ Purpose: give AI coding agents the minimal but specific context to be productive
   - Cross-cutting pipeline is centralized: configure CORS, compression, caching, swagger in `Extensions/*` rather than in `Program.cs`.
   - Logging via Serilog; file path configurable by `Logging:FilePath` (see `Program.cs`).
   - Health endpoint `/health` is always mapped.
+  - JWT authentication infrastructure exists but not fully applied to controllers.
+  - Rate limiting configured for sensitive endpoints (IP-based, 60/min for contact reads, 10/min for writes).
 - Frontend
   - Data access through `lib/api.ts` which adds: in-flight request dedupe, 2s AbortController timeout, and a small TTL cache with endpoint-specific fallbacks (carrito/productos → fallback to []). Prefer `apiFetch('/productos?...')` over raw fetch.
   - Cart state via `contexts/CartContext.tsx`: hydrates from localStorage, then syncs with backend in background; exposes `addToCart`, `updateQuantity`, `removeFromCart`, `clearCart`, `refreshCart`, `getTotalItems`, `getTotalPrice`.
   - Next.js config (`next.config.mjs`) ignores TypeScript and ESLint errors during build to prioritize DX; production build enables chunk splitting and cache headers.
+  - API calls include retry logic (2 attempts) and network error fallbacks to empty arrays for cart/product endpoints.
 
 ## How to add or change features (examples)
 - Add a new API endpoint
@@ -60,6 +70,7 @@ Purpose: give AI coding agents the minimal but specific context to be productive
 - Core contracts: `Pluxy3dBE.DomainContracts/**` (DTOs + Services).
 - Repos: `Pluxy3dBE/Repositories/**` and `Pluxy3dBE.Repository/**` (shared DAL); DbContext in `Repository/Data/AppDbContextFromDb.cs`.
 - Frontend data + state: `pluxy3d/lib/api.ts`, `pluxy3d/contexts/CartContext.tsx`.
+- Build configs: `pluxy3d/next.config.mjs` (ignores errors in dev), `Pluxy3dBE/appsettings.json`.
 
 ## Run locally (happy path)
 1) Backend: `dotnet run --project Pluxy3dBE/Pluxy3dBE.csproj` → Swagger at http://localhost:5299/swagger

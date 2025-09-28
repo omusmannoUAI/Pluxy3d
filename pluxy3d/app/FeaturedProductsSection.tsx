@@ -36,105 +36,48 @@ function Stars({ value = 0 }: { value?: number }) {
 export default function FeaturedProductsSection() {
   const [featuredProducts, setFeaturedProducts] = useState<FP[]>([])
   const [loading, setLoading] = useState(true)
-  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     const loadFeaturedProducts = async () => {
       try {
-        console.log('Loading featured products from API...');
-        console.log('Current origin:', window.location.origin);
-        console.log('Environment API URL:', process.env.NEXT_PUBLIC_API_URL);
-        
-        // Clear any existing cache first
-        if (typeof window !== 'undefined') {
-          // Force clear browser cache for this request
-          const timestamp = new Date().getTime();
-          console.log('Cache buster timestamp:', timestamp);
-        }
-        
-        // Try both apiFetch and direct fetch as fallback
-        let data;
-        try {
-          console.log('Trying apiFetch...');
-          // Force clear any cached requests first
-          await fetch('/api/clear-cache', { method: 'POST' }).catch(() => {});
-          data = await apiFetch('/productos?_=' + Date.now()); // Cache buster
-          console.log('apiFetch successful:', data);
-        } catch (apiFetchError) {
-          console.log('apiFetch failed, trying direct fetch:', apiFetchError);
-          
-          // Direct fetch with explicit CORS headers
-          const API_URL = 'http://localhost:5299/api';
-          const response = await fetch(`${API_URL}/productos?_=${Date.now()}`, {
-            method: 'GET',
-            mode: 'cors', // Explicit CORS mode
-            credentials: 'omit', // Don't send credentials
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-            cache: 'no-cache' // Force no cache
-          });
-          
-          console.log('Direct fetch response status:', response.status);
-          console.log('Direct fetch response headers:', Array.from(response.headers.entries()));
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          data = await response.json();
-          console.log('Direct fetch successful:', data);
-        }
-        
-        console.log('API Response raw data:', JSON.stringify(data, null, 2));
-        
-        // Handle paginated response from API
-        let productItems = []
-        if (data && data.items && Array.isArray(data.items)) {
-          console.log('Found items array with length:', data.items.length);
-          productItems = data.items
-        } else if (Array.isArray(data)) {
-          console.log('Data is direct array with length:', data.length);
-          productItems = data
-        } else {
-          console.log('Unexpected data structure:', typeof data, data);
-        }
+        // Prefer a small paginated request for featured items
+        const data = await apiFetch('/productos?page=1&pageSize=4')
 
-        console.log('Product items to process:', productItems.length);
-        setDebugInfo(`Found ${productItems.length} products from API`);
+        // Normalize possible response shapes: { items: [] } | { data: [] } | { results: [] } | []
+        let productItems: any[] = []
+        if (data && Array.isArray(data)) {
+          productItems = data
+        } else if (data && Array.isArray(data.items)) {
+          productItems = data.items
+        } else if (data && Array.isArray(data.data)) {
+          productItems = data.data
+        } else if (data && Array.isArray(data.results)) {
+          productItems = data.results
+        }
 
         if (productItems.length > 0) {
-          // Take first 4 products as featured
-          const products: FP[] = productItems.slice(0, 4).map((item: any, index: number) => {
-            console.log(`Processing product ${index}:`, item);
-            return {
-              id: item.id,
-              name: item.nombre || item.name,
-              description: item.descripcion || item.description || 'Producto de alta calidad',
-              price: Number((item.precio || item.price) ?? 0),
-              image: item.imagen || item.image || "/placeholder.svg",
-              href: `/productos/id/${item.id}`,
-              rating: Number(item.rating || item.calificacion || 4.0),
-              reviews: item.reviews || Math.floor(Math.random() * 200) + 50,
-              // Add badges based on position
-              badge: index === 0 ? { label: "Más Vendido", variant: "green" as BadgeVariant } :
-                     index === 1 ? { label: "Oferta", variant: "red" as BadgeVariant } :
-                     index === 2 ? { label: "Premium", variant: "purple" as BadgeVariant } :
-                     { label: "Destacado", variant: "emerald" as BadgeVariant }
-            }
-          })
-          console.log('Mapped featured products:', products);
+          const products: FP[] = productItems.slice(0, 4).map((item: any, index: number) => ({
+            id: Number(item.id),
+            name: String(item.nombre || item.Nombre || item.name || item.titulo || 'Producto'),
+            description: String(item.descripcion || item.Descripcion || item.description || 'Producto de alta calidad'),
+            price: Number(item.precio ?? item.Precio ?? item.price ?? 0),
+            image: String(item.imagen || item.Image || item.image || '/placeholder.svg'),
+            href: `/productos/id/${item.id}`,
+            rating: Number(item.rating ?? item.calificacion ?? 4.0),
+            reviews: Number(item.reviews ?? item.Resenas ?? Math.floor(Math.random() * 200) + 50),
+            badge: index === 0 ? { label: 'Más Vendido', variant: 'green' as BadgeVariant } :
+                   index === 1 ? { label: 'Oferta', variant: 'red' as BadgeVariant } :
+                   index === 2 ? { label: 'Premium', variant: 'purple' as BadgeVariant } :
+                   { label: 'Destacado', variant: 'emerald' as BadgeVariant }
+          }))
+
           setFeaturedProducts(products)
-          setDebugInfo(`Successfully loaded ${products.length} featured products`);
-          console.log('Featured products set:', products.length)
         } else {
-          console.log('No products found in API response')
-          setDebugInfo('No products found in API response');
+          // No items found, clear list (component renders a friendly message)
+          setFeaturedProducts([])
         }
       } catch (error) {
-        console.error('Error loading featured products:', error)
-        setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // swallow error and render fallback UI
         setFeaturedProducts([])
       } finally {
         setLoading(false)
@@ -181,10 +124,7 @@ export default function FeaturedProductsSection() {
         </p>
         <div className="text-center py-8">
           <p className="text-muted-foreground">No se pudieron cargar los productos destacados.</p>
-          <p className="text-sm text-muted-foreground mt-2">Revisa la consola del navegador para más detalles.</p>
-          <div className="mt-4 p-4 bg-gray-100 rounded text-sm">
-            <strong>Debug:</strong> {debugInfo || 'No debug info available'}
-          </div>
+          <p className="text-sm text-muted-foreground mt-2">Intenta recargar la página o visita la sección de productos.</p>
         </div>
         <div className="text-center mt-10">
           <Button asChild size="lg" variant="outline">

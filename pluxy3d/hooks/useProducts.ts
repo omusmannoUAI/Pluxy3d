@@ -61,14 +61,14 @@ export function useProducts(initialFilters?: ProductFilters) {
         // Map API response to frontend Product interface
         const products: Product[] = productItems.map((item: any) => ({
           id: item.id,
-          name: item.nombre || item.name,
-          description: item.descripcion || item.description,
-          price: Number((item.precio || item.price) ?? 0),
-          image: item.imagen || item.image || "/placeholder.svg",
-          category: item.categoria || item.category,
-          brand: item.marca || item.brand,
-          rating: Number(item.rating || item.calificacion || 0),
-          stock: item.stock || (item.cantidad > 0 ? "in_stock" : "out_of_stock")
+          name: item.nombre || item.Nombre || item.name,
+          description: item.descripcion || item.Descripcion || item.description,
+          price: Number((item.precio || item.Precio || item.price) ?? 0),
+          image: item.imagen || item.Image || item.image || "/placeholder.svg",
+          category: item.categoria || item.Categoria || item.category,
+          brand: item.marca || item.Marca || item.brand,
+          rating: Number(item.rating || item.calificacion || item.Calificacion || 0),
+          stock: item.stock || item.Stock || (item.cantidad > 0 ? "in_stock" : "out_of_stock")
         }))
 
         console.log('useProducts loaded:', products.length, products)

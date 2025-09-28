@@ -25,7 +25,7 @@ export function useMensajes() {
     const load = async () => {
       try {
         setLoading(true)
-        const arr = (await apiFetch('/contacto', { cache: false })) as Mensaje[]
+        const arr = (await apiFetch('/contactos')) as Mensaje[]
         if (alive) setData(arr.sort((a,b)=>a.createdAt.localeCompare(b.createdAt)).reverse())
       } catch (e: any) {
         toast({ title: "Error", description: e?.message || "No se pudieron cargar los mensajes", variant: "destructive" })
@@ -77,7 +77,7 @@ export function useMensajes() {
     const prev = data
     setData(d => d.map(x => x.id === m.id ? { ...x, read: value } : x))
     try {
-      await apiFetch('/contacto', { 
+      await apiFetch('/contactos', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ id: m.id, read: value }) 
@@ -92,7 +92,7 @@ export function useMensajes() {
     const prev = data
     setData(d => d.filter(x => x.id !== m.id))
     try {
-      await apiFetch(`/contacto?id=${m.id}`, { method: 'DELETE' }) 
+      await apiFetch(`/contactos?id=${m.id}`, { method: 'DELETE' }) 
     } catch (e: any) {
       setData(prev)
       toast({ title: 'Error', description: e?.message || 'No se pudo eliminar', variant: "destructive" })
@@ -128,7 +128,7 @@ export function useMensajes() {
     // Optimistic update
     setData(d => d.map(x => ids.includes(x.id) ? { ...x, read: value } : x))
     try {
-      await Promise.all(ids.map(id => apiFetch('/contacto', { 
+      await Promise.all(ids.map(id => apiFetch('/contactos', { 
         method: 'PATCH', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ id, read: value }) 
@@ -137,7 +137,7 @@ export function useMensajes() {
     } catch (e: any) {
       // Reload to recover
       setLoading(true)
-      apiFetch('/contacto', { cache: false }).then((arr: Mensaje[]) => setData(arr)).finally(() => setLoading(false)) 
+      apiFetch('/contactos').then((arr: Mensaje[]) => setData(arr)).finally(() => setLoading(false)) 
       toast({ title: 'Error', description: e?.message || 'No se pudo completar la acción', variant: "destructive" })
     } finally {
       clearSelection()
@@ -153,12 +153,12 @@ export function useMensajes() {
     // Optimistic update
     setData(d => d.filter(x => !ids.includes(x.id)))
     try {
-      await Promise.all(ids.map(id => apiFetch(`/contacto?id=${id}` , { method: 'DELETE' }))) 
+      await Promise.all(ids.map(id => apiFetch(`/contactos?id=${id}` , { method: 'DELETE' }))) 
       toast({ title: 'Eliminados', description: `${count} mensaje(s)` })
     } catch (e: any) {
       // Reload to recover
       setLoading(true)
-      apiFetch('/contacto', { cache: false }).then((arr: Mensaje[]) => setData(arr)).finally(() => setLoading(false)) 
+      apiFetch('/contactos').then((arr: Mensaje[]) => setData(arr)).finally(() => setLoading(false)) 
       toast({ title: 'Error', description: e?.message || 'No se pudo eliminar', variant: "destructive" })
     } finally {
       clearSelection()
