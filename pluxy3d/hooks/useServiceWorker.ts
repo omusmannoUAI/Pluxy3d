@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
+import logger from '../lib/logger'
 
 export function useServiceWorker() {
   useEffect(() => {
@@ -22,7 +23,7 @@ export function useServiceWorker() {
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
-        console.log('Service Worker registrado:', registration.scope)
+        logger.info('Service Worker registrado:', registration.scope)
 
         // Limpiar cache cada 24 horas
         setInterval(() => {
@@ -30,13 +31,13 @@ export function useServiceWorker() {
         }, 24 * 60 * 60 * 1000) // 24 horas
       })
       .catch((error) => {
-        console.log('Error registrando Service Worker:', error)
+        logger.warn('Error registrando Service Worker:', error)
       })
 
     // Escuchar mensajes del service worker
     navigator.serviceWorker.addEventListener('message', (event) => {
       if (event.data && event.data.type === 'CACHE_UPDATED') {
-        console.log('Cache actualizado para:', event.data.url)
+        logger.info('Cache actualizado para:', event.data.url)
       }
     })
   }, [])

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import logger from '@/lib/logger'
 
 export default function TestApiPage() {
   const [result, setResult] = useState<any>(null)
@@ -10,26 +11,26 @@ export default function TestApiPage() {
   useEffect(() => {
     const testApi = async () => {
       try {
-        console.log('Testing API connection...')
+        logger.info('Testing API connection...')
         
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5299/api'
-        console.log('Using API URL:', API_URL)
+        logger.info('Using API URL from environment (value hidden for security)')
         
         const response = await fetch(`${API_URL}/productos`)
-        console.log('Response status:', response.status)
-        console.log('Response ok:', response.ok)
+  logger.info('Response status:', response.status)
+  logger.info('Response ok:', response.ok)
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
         }
         
         const data = await response.json()
-        console.log('Data received:', data)
+  logger.info('Data received (truncated):', Array.isArray(data) ? `array(${data.length})` : typeof data)
         
         setResult(data)
         setLoading(false)
       } catch (err) {
-        console.error('API test failed:', err)
+        logger.error('API test failed:', err)
         setError(err instanceof Error ? err.message : String(err))
         setLoading(false)
       }

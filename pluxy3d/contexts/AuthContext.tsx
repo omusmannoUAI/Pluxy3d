@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react"
+import logger from '@/lib/logger'
 
 export interface AuthUser {
   id: number
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       // Fallback to mock login for development if API is not available
-      console.warn('API login failed, using mock login:', error)
+      logger.warn('API login failed, using mock login:', error)
       const isAdmin = /^(admin|administrator)@/i.test(email) || /@pluxy3d\.com$/i.test(email)
       const mock: AuthUser = { id: 1, name: email.split('@')[0] || 'Usuario', email, role: isAdmin ? 'admin' : 'customer' }
       setUser(mock)

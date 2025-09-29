@@ -30,8 +30,26 @@ const EXCLUDE_PATTERNS = [
 self.addEventListener('install', (event) => {
   console.log('SW: Installing...')
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(STATIC_ASSETS)
+    caches.open(STATIC_CACHE).then(async (cache) => {
+      // Add assets one-by-one to avoid failing the whole install if one resource is unreachable
+      for (const asset of STATIC_ASSETS) {
+        try {
+          const assetUrl = new URL(asset, self.location.href)
+          // Skip cross-origin assets to avoid CORS issues
+          if (assetUrl.origin !== self.location.origin) {
+            console.warn('SW: Skipping cross-origin asset during install:', asset)
+            continue
+          }
+          const response = await fetch(asset, { cache: 'no-cache' })
+          if (response && response.ok) {
+            await cache.put(asset, response.clone())
+          } else {
+            console.warn('SW: Failed to fetch asset during install (non-ok):', asset, response && response.status)
+          }
+        } catch (err) {
+          console.warn('SW: Failed to cache asset during install, skipping:', asset, err && err.message)
+        }
+      }
     })
   )
   self.skipWaiting()
@@ -47,6 +65,7 @@ self.addEventListener('activate', (event) => {
             console.log('SW: Deleting old cache:', cacheName)
             return caches.delete(cacheName)
           }
+          return Promise.resolve()
         })
       )
     })
@@ -67,7 +86,6 @@ self.addEventListener('fetch', (event) => {
   // Nunca interceptar endpoints de API locales
   if (url.pathname.startsWith('/api/')) return
 
-  // Excluir patrones específicos
   if (EXCLUDE_PATTERNS.some(pattern => pattern.test(url.pathname))) return
 
   // Estrategia de cache agresiva para recursos optimizados
@@ -107,6 +125,7 @@ self.addEventListener('message', (event) => {
           if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
             return caches.delete(cacheName)
           }
+          return Promise.resolve()
         })
       )
     })

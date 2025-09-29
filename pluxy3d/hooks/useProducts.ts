@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { Product } from "@/lib/types"
 import { apiFetch } from "@/lib/api"
+import logger from '@/lib/logger'
 
 export interface ProductFilters {
   category?: string
@@ -71,11 +72,11 @@ export function useProducts(initialFilters?: ProductFilters) {
           stock: item.stock || item.Stock || (item.cantidad > 0 ? "in_stock" : "out_of_stock")
         }))
 
-        console.log('useProducts loaded:', products.length, products)
+  logger.info('useProducts loaded:', products.length, products)
         setProducts(products)
       } catch (err) {
         setError('Error al cargar productos')
-        console.error('Error loading products:', err)
+  logger.error('Error loading products:', err)
         // Fallback to empty array on error
         setProducts([])
       } finally {

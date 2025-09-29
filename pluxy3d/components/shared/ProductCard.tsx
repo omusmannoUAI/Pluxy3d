@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useCart } from "@/contexts/CartContext"
 import { useState } from "react"
+import logger from '@/lib/logger'
 import { Product } from "@/lib/types"
 import { formatPriceSimple } from "@/lib/helpers"
 
@@ -31,12 +32,12 @@ export function ProductCard({
   const handleAddToCart = async () => {
     if (onAddToCart) {
       onAddToCart(product)
-    } else {
+      } else {
       try {
         setIsAdding(true)
         await addToCart(product)
       } catch (error) {
-        console.error('Error adding to cart:', error)
+        logger.error('Error adding to cart:', error)
       } finally {
         setIsAdding(false)
       }

@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Verify NEXT_PUBLIC_API_URL secret
         run: |
-          node -e "if (process.env.NEXT_PUBLIC_API_URL) { console.log('NEXT_PUBLIC_API_URL is set'); } else { console.error('NEXT_PUBLIC_API_URL MISSING'); process.exit(1); }"
+          node -e "const v=process.env.NEXT_PUBLIC_API_URL; if (!v) { console.error('NEXT_PUBLIC_API_URL MISSING'); process.exit(1); } if (/localhost/i.test(v)) { console.error('NEXT_PUBLIC_API_URL appears to be a localhost URL — refusing to build'); process.exit(2); } console.log('NEXT_PUBLIC_API_URL is set and looks valid');"
       - uses: actions/checkout@v3
         with:
           submodules: true

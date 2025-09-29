@@ -7,6 +7,7 @@ import { Product } from "@/lib/types"
 import { ProductFilters } from "@/components/shared/ProductFilters"
 import { useState, useEffect, useRef } from "react"
 import { apiFetch } from "@/lib/api"
+import logger from '@/lib/logger'
 
 export default function ProductosContent() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -51,10 +52,10 @@ export default function ProductosContent() {
           brand: p.marca || p.brand
         })) as Product[]
         
-        setProducts(mappedProducts)
-        console.log('Loaded products:', mappedProducts.length, mappedProducts)
+  setProducts(mappedProducts)
+  logger.info('Loaded products:', mappedProducts.length)
       } catch (error) {
-        console.error('Error loading initial data:', error)
+        logger.error('Error loading initial data:', error)
         setProducts([])
       } finally {
         setLoading(false)
@@ -89,10 +90,10 @@ export default function ProductosContent() {
           brand: p.marca || p.brand
         })) as Product[]
         
-        setProducts(mapped)
-        console.log('Loaded category products:', mapped.length, mapped)
+  setProducts(mapped)
+  logger.info('Loaded category products:', mapped.length)
       } catch (e) {
-        console.error('Error loading category products:', e)
+        logger.error('Error loading category products:', e)
         setProducts([])
       } finally {
         setLoading(false)
@@ -111,7 +112,7 @@ export default function ProductosContent() {
 
   const handleApplyFilters = () => {
     // Apply filtering logic here
-    console.log({ selectedCategories, selectedBrands, priceRange })
+    logger.info('Apply filters:', { selectedCategories, selectedBrands, priceRange })
   }
 
   const handleClearFilters = () => {

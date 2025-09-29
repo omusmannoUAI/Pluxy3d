@@ -4,14 +4,15 @@ let API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5299/api'
 
 // When running in a browser on a non-localhost origin, avoid accidentally calling a localhost dev server
 // (this can trigger ad-blockers and cause ERR_BLOCKED_BY_CLIENT). Prefer a site-relative `/api` path.
+import logger from './logger'
+
 if (typeof window !== 'undefined') {
   try {
     const hostname = window.location.hostname
     // If the inlined env points to localhost but the site is not served from localhost, switch to site-relative API
     if (API_URL.startsWith('http://localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
       API_URL = `${window.location.protocol}//${window.location.host}/api`
-      // eslint-disable-next-line no-console
-      console.info('[apiFetch] Resolved API_URL to site-relative', API_URL)
+      logger.info('[apiFetch] Resolved API_URL to site-relative', API_URL)
     }
   } catch (e) {
     // ignore
@@ -20,8 +21,7 @@ if (typeof window !== 'undefined') {
 
 // Dev hint when env var is missing (preserve original behavior)
 if (process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_API_URL) {
-  // eslint-disable-next-line no-console
-  console.warn(
+  logger.warn(
     "NEXT_PUBLIC_API_URL is not set; falling back to 'http://localhost:5299/api'. Set it in .env.local for correct environments."
   )
 }
@@ -115,8 +115,7 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
             const data = await res.json()
             // Log de latencia (dev only)
             if (process.env.NODE_ENV !== 'production') {
-              // eslint-disable-next-line no-console
-              console.debug(`[apiFetch] ${endpoint} in ${Date.now() - startAll}ms`)
+              logger.debug(`[apiFetch] ${endpoint} in ${Date.now() - startAll}ms`)
             }
             // Cachear respuesta exitosa 
             if (shouldCache) { 
@@ -138,7 +137,7 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
     } catch (error) { 
       // Si es un timeout o error de red, usar fallback inmediatamente 
       if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) { 
-        console.warn(`API timeout/network error for ${endpoint}, using fallback`) 
+        logger.warn(`API timeout/network error for ${endpoint}, using fallback`) 
         // Fallbacks por endpoint 
         if (endpoint.startsWith('/carrito')) return []; 
         if (endpoint.startsWith('/productos')) return []; 

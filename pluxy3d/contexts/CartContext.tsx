@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { apiFetch } from '@/lib/api'
+import logger from '@/lib/logger'
 import { Product } from '@/lib/types'
 
 export interface CartItem {
@@ -168,13 +169,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
           } catch (error) {
             // Silenciar errores del backend para no afectar UX
-            console.warn('Backend not available, using local cart')
+            logger.warn('Backend not available, using local cart')
           }
         }, 100) // Pequeño delay para no bloquear el renderizado inicial
 
         return () => clearTimeout(timeoutId)
       } catch (error) {
-        console.error('Error loading cart:', error)
+        logger.error('Error loading cart:', error)
       }
     }
 
@@ -199,7 +200,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.setItem('pluxy_cart', JSON.stringify(state.items))
       itemsRef.current = [...state.items] // Actualizar ref con copia
     } catch (error) {
-      console.warn('Error saving cart to localStorage:', error)
+      logger.warn('Error saving cart to localStorage:', error)
     }
   }, [state.items])
 
@@ -225,7 +226,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_LOADING', payload: false })
       }
     } catch (error) {
-      console.error('Error loading cart:', error)
+      logger.error('Error loading cart:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al cargar el carrito', loading: false } })
     }
   }, []) // Remover dependencias para evitar recreación constante
@@ -243,7 +244,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Después de agregar, refrescar el carrito
       await refreshCart()
     } catch (error) {
-      console.error('Error adding to cart:', error)
+      logger.error('Error adding to cart:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al agregar al carrito', loading: false } })
     }
   }, [refreshCart])
@@ -254,7 +255,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await apiFetch(`/carrito/${itemId}`, { method: 'DELETE' })
       dispatch({ type: 'REMOVE_ITEM', payload: itemId })
     } catch (error) {
-      console.error('Error removing from cart:', error)
+      logger.error('Error removing from cart:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al eliminar del carrito', loading: false } })
     }
   }, [])
@@ -270,7 +271,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }) 
       dispatch({ type: 'UPDATE_ITEM', payload: { id: itemId, quantity } })
     } catch (error) {
-      console.error('Error updating quantity:', error)
+      logger.error('Error updating quantity:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al actualizar cantidad', loading: false } })
     }
   }, [])
@@ -281,7 +282,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       await apiFetch('/carrito/clear', { method: 'DELETE' })
       dispatch({ type: 'CLEAR_ITEMS' })
     } catch (error) {
-      console.error('Error clearing cart:', error)
+      logger.error('Error clearing cart:', error)
       dispatch({ type: 'SET_STATE', payload: { error: 'Error al vaciar el carrito', loading: false } })
     }
   }, [])
