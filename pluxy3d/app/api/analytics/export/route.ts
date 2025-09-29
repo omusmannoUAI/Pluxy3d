@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { gen } from "../route"
+import { gen, AnalyticsResponse } from "../gen"
 
 function toCSV(range: string) {
-  const data = gen(range)
+  const data: AnalyticsResponse = gen(range)
   const rows: string[] = []
   const esc = (s: string) => '"' + s.replaceAll('"', '""') + '"'
 
@@ -15,23 +15,23 @@ function toCSV(range: string) {
 
   // Traffic
   rows.push("\nTraffic,Day,Visitors")
-  data.trafficByDay.forEach((p) => rows.push(["Traffic", esc(p.day), String(p.visitantes)].join(",")))
+  data.trafficByDay.forEach((p: { day: string; visitantes: number }) => rows.push(["Traffic", esc(p.day), String(p.visitantes)].join(",")))
 
   // Funnel
   rows.push("\nFunnel,Step,Value")
-  data.funnel.forEach((f) => rows.push(["Funnel", esc(f.name), String(f.value)].join(",")))
+  data.funnel.forEach((f: { name: string; value: number }) => rows.push(["Funnel", esc(f.name), String(f.value)].join(",")))
 
   // Top Sellers
   rows.push("\nTopSellers,Name,Value")
-  data.topSellers.forEach((t) => rows.push(["TopSellers", esc(t.name), String(t.value)].join(",")))
+  data.topSellers.forEach((t: { name: string; value: number }) => rows.push(["TopSellers", esc(t.name), String(t.value)].join(",")))
 
   // Traffic Sources
   rows.push("\nTrafficSources,Name,Percent")
-  data.trafficSources.forEach((s) => rows.push(["TrafficSources", esc(s.name), String(s.value)].join(",")))
+  data.trafficSources.forEach((s: { name: string; value: number }) => rows.push(["TrafficSources", esc(s.name), String(s.value)].join(",")))
 
   // Category Performance
   rows.push("\nCategoryPerformance,Name,Percent,Revenue")
-  data.categoryPerformance.forEach((c) => rows.push(["CategoryPerformance", esc(c.name), String(c.percent), String(c.revenue)].join(",")))
+  data.categoryPerformance.forEach((c: { name: string; percent: number; revenue: number }) => rows.push(["CategoryPerformance", esc(c.name), String(c.percent), String(c.revenue)].join(",")))
 
   return rows.join("\n")
 }
