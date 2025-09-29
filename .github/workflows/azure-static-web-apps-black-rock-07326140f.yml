@@ -25,7 +25,13 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
+    env:
+      # Use a repository secret to avoid committing sensitive backend URL to the repo
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
     steps:
+      - name: Verify NEXT_PUBLIC_API_URL secret
+        run: |
+          node -e "if (process.env.NEXT_PUBLIC_API_URL) { console.log('NEXT_PUBLIC_API_URL is set'); } else { console.error('NEXT_PUBLIC_API_URL MISSING'); process.exit(1); }"
       - uses: actions/checkout@v3
         with:
           submodules: true
@@ -39,9 +45,7 @@ jobs:
           action: "upload"
           app_location: "./pluxy3d"
           app_build_command: "npm install --legacy-peer-deps && npm run build"
-        env:
-          # Use a repository secret to avoid committing sensitive backend URL to the repo
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        # Note: the job-level env provides NEXT_PUBLIC_API_URL to the build step
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
