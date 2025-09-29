@@ -29,6 +29,9 @@ jobs:
           action: "upload"
           app_location: "./pluxy3d"
           app_build_command: "npm install --legacy-peer-deps && npm run build"
+        env:
+          # Use a repository secret to avoid committing sensitive backend URL to the repo
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           # Note: skip_deploy_on_missing_secrets is not a valid input for this action
 
   close_pull_request_job:

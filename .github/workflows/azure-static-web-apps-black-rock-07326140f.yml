@@ -40,7 +40,8 @@ jobs:
           app_location: "./pluxy3d"
           app_build_command: "npm install --legacy-peer-deps && npm run build"
         env:
-          NEXT_PUBLIC_API_URL: "https://pluxy3d-api-prod-d9h2f3gpf8cmcqd9.eastus2-01.azurewebsites.net/api"
+          # Use a repository secret to avoid committing sensitive backend URL to the repo
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
