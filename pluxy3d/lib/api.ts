@@ -1,7 +1,24 @@
 // Resolve API base URL from env with a safe local fallback
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5299/api';
+// Resolve API base URL from env with a safe local fallback. NOTE: NEXT_PUBLIC_* vars are inlined at build time.
+let API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5299/api'
 
-// Dev hint when env var is missing
+// When running in a browser on a non-localhost origin, avoid accidentally calling a localhost dev server
+// (this can trigger ad-blockers and cause ERR_BLOCKED_BY_CLIENT). Prefer a site-relative `/api` path.
+if (typeof window !== 'undefined') {
+  try {
+    const hostname = window.location.hostname
+    // If the inlined env points to localhost but the site is not served from localhost, switch to site-relative API
+    if (API_URL.startsWith('http://localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      API_URL = `${window.location.protocol}//${window.location.host}/api`
+      // eslint-disable-next-line no-console
+      console.info('[apiFetch] Resolved API_URL to site-relative', API_URL)
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Dev hint when env var is missing (preserve original behavior)
 if (process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_API_URL) {
   // eslint-disable-next-line no-console
   console.warn(
