@@ -1,12 +1,8 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Star } from "lucide-react"
 import { formatPriceSimple } from "@/lib/helpers"
-import { useState, useEffect } from "react"
-import { apiFetch } from "@/lib/api"
 
 type BadgeVariant = "green" | "red" | "purple" | "emerald"
 type FP = {
@@ -33,59 +29,49 @@ function Stars({ value = 0 }: { value?: number }) {
   )
 }
 
-export default function FeaturedProductsSection() {
-  const [featuredProducts, setFeaturedProducts] = useState<FP[]>([])
-  const [loading, setLoading] = useState(true)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV !== 'production' ? 'http://localhost:5299/api' : '/api')
 
-  useEffect(() => {
-    const loadFeaturedProducts = async () => {
-      try {
-        // Prefer a small paginated request for featured items
-        const data = await apiFetch('/productos?page=1&pageSize=4')
+export default async function FeaturedProductsSection() {
+  // Server-side fetch with ISR (revalidate)
+  let featuredProducts: FP[] = []
+  try {
+    const res = await fetch(`${API_BASE}/productos?page=1&pageSize=4`, { next: { revalidate: 300 } })
+    const data = await res.json().catch(() => null)
 
-        // Normalize possible response shapes: { items: [] } | { data: [] } | { results: [] } | []
-        let productItems: any[] = []
-        if (data && Array.isArray(data)) {
-          productItems = data
-        } else if (data && Array.isArray(data.items)) {
-          productItems = data.items
-        } else if (data && Array.isArray(data.data)) {
-          productItems = data.data
-        } else if (data && Array.isArray(data.results)) {
-          productItems = data.results
-        }
-
-        if (productItems.length > 0) {
-          const products: FP[] = productItems.slice(0, 4).map((item: any, index: number) => ({
-            id: Number(item.id),
-            name: String(item.nombre || item.Nombre || item.name || item.titulo || 'Producto'),
-            description: String(item.descripcion || item.Descripcion || item.description || 'Producto de alta calidad'),
-            price: Number(item.precio ?? item.Precio ?? item.price ?? 0),
-            image: String(item.imagen || item.Image || item.image || '/placeholder.svg'),
-            href: `/productos/id/${item.id}`,
-            rating: Number(item.rating ?? item.calificacion ?? 4.0),
-            reviews: Number(item.reviews ?? item.Resenas ?? Math.floor(Math.random() * 200) + 50),
-            badge: index === 0 ? { label: 'Más Vendido', variant: 'green' as BadgeVariant } :
-                   index === 1 ? { label: 'Oferta', variant: 'red' as BadgeVariant } :
-                   index === 2 ? { label: 'Premium', variant: 'purple' as BadgeVariant } :
-                   { label: 'Destacado', variant: 'emerald' as BadgeVariant }
-          }))
-
-          setFeaturedProducts(products)
-        } else {
-          // No items found, clear list (component renders a friendly message)
-          setFeaturedProducts([])
-        }
-      } catch (error) {
-        // swallow error and render fallback UI
-        setFeaturedProducts([])
-      } finally {
-        setLoading(false)
-      }
+    // Normalize possible response shapes: { items: [] } | { data: [] } | { results: [] } | []
+    let productItems: any[] = []
+    if (data && Array.isArray(data)) {
+      productItems = data
+    } else if (data && Array.isArray(data.items)) {
+      productItems = data.items
+    } else if (data && Array.isArray(data.data)) {
+      productItems = data.data
+    } else if (data && Array.isArray(data.results)) {
+      productItems = data.results
     }
 
-    loadFeaturedProducts()
-  }, [])
+    if (productItems.length > 0) {
+      featuredProducts = productItems.slice(0, 4).map((item: any, index: number) => ({
+        id: Number(item.id),
+        name: String(item.nombre || item.Nombre || item.name || item.titulo || 'Producto'),
+        description: String(item.descripcion || item.Descripcion || item.description || 'Producto de alta calidad'),
+        price: Number(item.precio ?? item.Precio ?? item.price ?? 0),
+        image: String(item.imagen || item.Image || item.image || '/placeholder.svg'),
+        href: `/productos/id/${item.id}`,
+        rating: Number(item.rating ?? item.calificacion ?? 4.0),
+        reviews: Number(item.reviews ?? item.Resenas ?? Math.floor(Math.random() * 200) + 50),
+        badge: index === 0 ? { label: 'M\u00e1s Vendido', variant: 'green' as BadgeVariant } :
+               index === 1 ? { label: 'Oferta', variant: 'red' as BadgeVariant } :
+               index === 2 ? { label: 'Premium', variant: 'purple' as BadgeVariant } :
+               { label: 'Destacado', variant: 'emerald' as BadgeVariant }
+      }))
+    }
+  } catch (error) {
+    // swallow and render fallback UI
+    featuredProducts = []
+  }
+
+  const loading = false
 
   if (loading) {
     return (
@@ -94,7 +80,7 @@ export default function FeaturedProductsSection() {
           <h2 className="text-3xl md:text-4xl font-bold">Productos Destacados</h2>
         </div>
         <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-          Descubre nuestra selección de productos más populares y mejor valorados por nuestros clientes
+          Descubre nuestra selecci\u00f3n de productos m\u00e1s populares y mejor valorados por nuestros clientes
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
@@ -120,11 +106,11 @@ export default function FeaturedProductsSection() {
           <h2 className="text-3xl md:text-4xl font-bold">Productos Destacados</h2>
         </div>
         <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-          Descubre nuestra selección de productos más populares y mejor valorados por nuestros clientes
+          Descubre nuestra selecci\u00f3n de productos m\u00e1s populares y mejor valorados por nuestros clientes
         </p>
         <div className="text-center py-8">
           <p className="text-muted-foreground">No se pudieron cargar los productos destacados.</p>
-          <p className="text-sm text-muted-foreground mt-2">Intenta recargar la página o visita la sección de productos.</p>
+          <p className="text-sm text-muted-foreground mt-2">Intenta recargar la p\u00e1gina o visita la secci\u00f3n de productos.</p>
         </div>
         <div className="text-center mt-10">
           <Button asChild size="lg" variant="outline">
@@ -144,7 +130,7 @@ export default function FeaturedProductsSection() {
         <h2 className="text-3xl md:text-4xl font-bold">Productos Destacados</h2>
       </div>
       <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
-        Descubre nuestra selección de productos más populares y mejor valorados por nuestros clientes
+        Descubre nuestra selecci\u00f3n de productos m\u00e1s populares y mejor valorados por nuestros clientes
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

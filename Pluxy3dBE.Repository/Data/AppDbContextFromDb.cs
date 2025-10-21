@@ -42,8 +42,7 @@ public partial class AppDbContextFromDb : DbContext
     {
         if (optionsBuilder.IsConfigured) return;
 
-        var cs = Environment.GetEnvironmentVariable("DATABASE_CONNECTION")
-                 ?? "Data Source=pluxy3dbe.db";
+        var cs = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
 
         // Choose provider by inspecting connection string
         if (cs.Contains("Data Source=", StringComparison.OrdinalIgnoreCase) &&

@@ -1,0 +1,35 @@
+name: Build and deploy .NET app to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore NuGet packages
+        run: dotnet restore Pluxy3dBE/Pluxy3dBE.csproj
+
+      - name: Build
+        run: dotnet build Pluxy3dBE/Pluxy3dBE.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish Pluxy3dBE/Pluxy3dBE.csproj -c Release -o ./publish
+
+      - name: 'Deploy to Azure WebApp'
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          slot-name: 'production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: './publish'

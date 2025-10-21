@@ -40,12 +40,19 @@ public static class ServiceCollectionExtensions
             });
 
         // DbContext (supports SQL Server or SQLite based on connection string)
-        var connectionString = config.GetConnectionString("DefaultConnection");
+        // Prefer the environment variable DATABASE_CONNECTION (used by AppDbContextFromDb.OnConfiguring)
+        // so the runtime always targets the real DB when provided.
+        var envCs = Environment.GetEnvironmentVariable("DATABASE_CONNECTION");
+        var connectionString = !string.IsNullOrWhiteSpace(envCs)
+            ? envCs
+            : config.GetConnectionString("DefaultConnection");
+
+        // If still empty, fallback to local SQLite for developer convenience
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            // Fallback to local SQLite DB if not configured
             connectionString = "Data Source=pluxy3d.db";
         }
+
         services.AddDbContextPool<AppDbContextFromDb>(options =>
         {
             var cs = connectionString ?? string.Empty;

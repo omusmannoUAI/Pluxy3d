@@ -1,8 +1,9 @@
 // Service Worker optimizado para Pluxy3D
 // Incrementa la versión si cambias la estrategia para invalidar caches antiguos
-const CACHE_NAME = 'pluxy3d-v3'
-const STATIC_CACHE = 'pluxy3d-static-v3'
-const DYNAMIC_CACHE = 'pluxy3d-dynamic-v3'
+// Aumenta la versión para forzar invalidación cuando actualices esta lógica.
+const CACHE_NAME = 'pluxy3d-v4'
+const STATIC_CACHE = 'pluxy3d-static-v4'
+const DYNAMIC_CACHE = 'pluxy3d-dynamic-v4'
 
 // Recursos críticos a cachear inmediatamente
 const STATIC_ASSETS = [
@@ -97,8 +98,12 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           if (response && response.ok) {
-            const clone = response.clone()
-            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone))
+            const contentType = response.headers.get('content-type') || ''
+            // Avoid caching HTML (navigation) responses to prevent serving stale pages
+            if (!contentType.includes('text/html')) {
+              const clone = response.clone()
+              caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone))
+            }
           }
           return response
         })
@@ -110,6 +115,19 @@ self.addEventListener('fetch', (event) => {
             status: 503,
             statusText: 'Service Unavailable'
           })
+        })
+    )
+  }
+
+  // Handle navigation requests (HTML) with network-first, no caching
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((resp) => resp)
+        .catch(async () => {
+          const cached = await caches.match('/')
+          if (cached) return cached
+          return new Response('Offline', { status: 503 })
         })
     )
   }

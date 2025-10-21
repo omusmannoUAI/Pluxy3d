@@ -155,7 +155,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           if (!isMounted) return
           try {
             const data = await apiFetch('/carrito')
-            if (Array.isArray(data) && data.length > 0 && isMounted) {
+            if (!isMounted) return
+
+            if (Array.isArray(data)) {
+              // Mapear respuesta incluso si viene vacía (backend disponible pero carrito vacío)
               const mapped = data.map((d: any) => ({
                 id: d.id,
                 productId: d.impresoraId || d.ImpresoraId,
@@ -166,10 +169,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 quantity: Number(d.cantidad || d.Cantidad || 1),
               })) as CartItem[]
               dispatch({ type: 'SET_ITEMS', payload: mapped })
+            } else {
+              // Respuesta inesperada: marcar error para que UI lo muestre
+              logger.warn('Unexpected carrito response:', data)
+              dispatch({ type: 'SET_STATE', payload: { error: 'Error al leer carrito desde el servidor' } })
             }
           } catch (error) {
-            // Silenciar errores del backend para no afectar UX
-            logger.warn('Backend not available, using local cart')
+            // Registrar y exponer error en el estado para que no se silencie
+            logger.warn('Backend not available while loading cart:', error)
+            dispatch({ type: 'SET_STATE', payload: { error: 'Backend no disponible', loading: false } })
           }
         }, 100) // Pequeño delay para no bloquear el renderizado inicial
 

@@ -1,8 +1,4 @@
-"use client"
-
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
-import { apiFetch } from "@/lib/api"
 
 type CatKey = "impresoras" | "componentes" | "filamentos" | "accesorios"
 
@@ -17,77 +13,57 @@ function norm(s: string) {
   return s
     .toLowerCase()
     .normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ")
     .trim()
 }
 
-export default function CategoriesGrid() {
-  const [counts, setCounts] = useState<Record<CatKey, number | null>>({
-    impresoras: null,
-    componentes: null,
-    filamentos: null,
-    accesorios: null,
-  })
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? (process.env.NODE_ENV !== 'production' ? 'http://localhost:5299/api' : '/api')
 
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      try {
-        // Try categories endpoint first
-        const cats = await apiFetch('/categorias')
-        let next: Record<CatKey, number | null> = { impresoras: null, componentes: null, filamentos: null, accesorios: null }
-        if (Array.isArray(cats)) {
-          for (const c of cats) {
-            const name = norm(String(c.name ?? c.label ?? ""))
-            const count = Number(c.count ?? 0)
-            if (name.includes("impresora")) next.impresoras = count
-            else if (name.includes("componente") || name.includes("repuesto")) next.componentes = count
-            else if (name.includes("filamento")) next.filamentos = count
-            else if (name.includes("accesorio")) next.accesorios = count
-          }
+export default async function CategoriesGrid() {
+  const counts: Record<CatKey, number | null> = { impresoras: null, componentes: null, filamentos: null, accesorios: null }
+  try {
+    const catsRes = await fetch(`${API_BASE}/categorias`, { next: { revalidate: 300 } })
+    const cats = await catsRes.json().catch(() => null)
+    if (Array.isArray(cats)) {
+      for (const c of cats) {
+        const name = norm(String(c.name ?? c.label ?? ""))
+        const count = Number(c.count ?? 0)
+        if (name.includes("impresora")) counts.impresoras = count
+        else if (name.includes("componente") || name.includes("repuesto")) counts.componentes = count
+        else if (name.includes("filamento")) counts.filamentos = count
+        else if (name.includes("accesorio")) counts.accesorios = count
+      }
+    }
+
+    if (Object.values(counts).some(v => v === null)) {
+      const prodsRes = await fetch(`${API_BASE}/productos`, { next: { revalidate: 300 } })
+      const prods = await prodsRes.json().catch(() => null)
+      if (Array.isArray(prods)) {
+        const agg: Record<CatKey, number> = { impresoras: 0, componentes: 0, filamentos: 0, accesorios: 0 }
+        for (const p of prods) {
+          const cat = norm(String(p.category ?? p.categoria ?? ""))
+          if (cat.includes("impresora")) agg.impresoras++
+          else if (cat.includes("componente") || cat.includes("repuesto") || cat.includes("mejora")) agg.componentes++
+          else if (cat.includes("filamento")) agg.filamentos++
+          else if (cat.includes("accesorio")) agg.accesorios++
         }
-
-        // If some are still null, try to infer from products
-        if (Object.values(next).some(v => v === null)) {
-          const prods = await apiFetch('/productos')
-          if (Array.isArray(prods)) {
-            const agg: Record<CatKey, number> = { impresoras: 0, componentes: 0, filamentos: 0, accesorios: 0 }
-            for (const p of prods) {
-              const cat = norm(String(p.category ?? p.categoria ?? ""))
-              if (cat.includes("impresora")) agg.impresoras++
-              else if (cat.includes("componente") || cat.includes("repuesto") || cat.includes("mejora")) agg.componentes++
-              else if (cat.includes("filamento")) agg.filamentos++
-              else if (cat.includes("accesorio")) agg.accesorios++
-            }
-            // Fill only missing values
-            for (const key of Object.keys(next) as CatKey[]) {
-              if (next[key] == null) next[key] = agg[key]
-            }
-          }
-        }
-
-        if (!cancelled) setCounts(next)
-      } catch {
-        if (!cancelled) {
-          // Leave as nulls; UI will show placeholders
-          setCounts({ impresoras: null, componentes: null, filamentos: null, accesorios: null })
+        for (const key of Object.keys(counts) as CatKey[]) {
+          if (counts[key] == null) counts[key] = agg[key]
         }
       }
     }
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  } catch (err) {
+    // keep nulls - UI will show placeholders
+  }
 
-  const items = useMemo(() => baseCats.map(c => ({ ...c, count: counts[c.key] })), [counts])
+  const items = baseCats.map(c => ({ ...c, count: counts[c.key] }))
 
   return (
     <section className="container mx-auto w-full py-10 md:py-12">
       <div className="text-center mb-8 md:mb-10">
-        <h2 className="text-3xl font-bold">Explora por Categorías</h2>
-        <p className="text-muted-foreground mt-2">Encuentra exactamente lo que necesitas navegando por nuestras categorías especializadas</p>
+        <h2 className="text-3xl font-bold">Explora por Categor\u00edas</h2>
+        <p className="text-muted-foreground mt-2">Encuentra exactamente lo que necesitas navegando por nuestras categor\u00edas especializadas</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {items.map((c) => (

@@ -93,8 +93,16 @@ try
                     await db.Database.EnsureCreatedAsync();
                 }
             }
+            // Ejecutar seeding mínimo (categorías) si es necesario
+            try
+            {
+                await Pluxy3dBE.Data.DbInitializer.SeedAsync(app.Services);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Seeding failed");
+            }
 
-                  
         }
         catch (Exception ex)
         {

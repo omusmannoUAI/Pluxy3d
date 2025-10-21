@@ -50,3 +50,13 @@ tools/ApplyMigrations/obj/
 *.bak
 script base.sql
 Pluxy3dBE/pluxy3d.db*
+# Publish artifacts
+publish/
+
+# Ensure local SQLite DBs and generated publish output are ignored
+**/pluxy3d.db
+**/publish/
+*.zip
+
+# Ignore local IDE terminals
+.vscode/terminal*

@@ -25,7 +25,7 @@ export default function CartPage() {
     (total, item) => total + (item.discount ? (item.discount.originalPrice - item.price) * item.quantity : 0),
     0,
   )
-  const shipping: number = 0 // Free shipping
+  const shipping = 0 // Free shipping
   const total = subtotal + shipping
 
   const handleUpdateQuantity = async (id: number, newQuantity: number) => {

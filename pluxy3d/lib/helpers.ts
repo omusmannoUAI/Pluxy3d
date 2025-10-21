@@ -8,7 +8,7 @@
  * @param currency - The currency code (default: 'CLP')
  * @param locale - The locale for formatting (default: 'es-CL')
  */
-export function formatPrice(price: number, currency: string = 'CLP', locale: string = 'es-CL'): string {
+export function formatPrice(price: number, currency = 'CLP', locale = 'es-CL'): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
@@ -20,7 +20,7 @@ export function formatPrice(price: number, currency: string = 'CLP', locale: str
  * Formats a price number to a simple string with thousands separator
  * @param price - The price to format
  */
-export function formatPriceSimple(price: number, locale: string = 'es-CL'): string {
+export function formatPriceSimple(price: number, locale = 'es-CL'): string {
   // Deterministic thousands separator to avoid SSR/CSR mismatches
   return `$${price.toLocaleString(locale, {
     minimumFractionDigits: 0,

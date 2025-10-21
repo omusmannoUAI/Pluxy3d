@@ -1,6 +1,7 @@
 // Resolve API base URL from env with a safe local fallback
 // Resolve API base URL from env with a safe local fallback. NOTE: NEXT_PUBLIC_* vars are inlined at build time.
-let API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5299/api'
+// Prefer explicit NEXT_PUBLIC_API_URL. If missing, resolve sensible defaults depending on env.
+let API_URL = process.env.NEXT_PUBLIC_API_URL ?? undefined
 
 // When running in a browser on a non-localhost origin, avoid accidentally calling a localhost dev server
 // (this can trigger ad-blockers and cause ERR_BLOCKED_BY_CLIENT). Prefer a site-relative `/api` path.
@@ -10,7 +11,7 @@ if (typeof window !== 'undefined') {
   try {
     const hostname = window.location.hostname
     // If the inlined env points to localhost but the site is not served from localhost, switch to site-relative API
-    if (API_URL.startsWith('http://localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    if (API_URL && API_URL.startsWith('http://localhost') && hostname !== 'localhost' && hostname !== '127.0.0.1') {
       API_URL = `${window.location.protocol}//${window.location.host}/api`
       logger.info('[apiFetch] Resolved API_URL to site-relative', API_URL)
     }
@@ -19,11 +20,18 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Dev hint when env var is missing (preserve original behavior)
-if (process.env.NODE_ENV !== 'production' && !process.env.NEXT_PUBLIC_API_URL) {
-  logger.warn(
-    "NEXT_PUBLIC_API_URL is not set; falling back to 'http://localhost:5299/api'. Set it in .env.local for correct environments."
-  )
+// If NEXT_PUBLIC_API_URL is not provided, pick a safe default per environment.
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  if (process.env.NODE_ENV !== 'production') {
+    logger.warn(
+      "NEXT_PUBLIC_API_URL is not set; falling back to http://localhost:5299/api for local development. Set it in .env.local for correct environments."
+    )
+    API_URL = API_URL ?? 'http://localhost:5299/api'
+  } else {
+    // In production prefer site-relative API to avoid leaking localhost or failing CORS.
+    logger.error('NEXT_PUBLIC_API_URL is not set in production; using site-relative /api as fallback')
+    API_URL = API_URL ?? '/api'
+  }
 }
 
 // Cache inteligente con TTL
@@ -107,7 +115,8 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
             signal: controller.signal
           }
 
-          const res = await fetch(`${API_URL}${endpoint}`, fetchOptions)
+          const url = `${API_URL}${endpoint}`
+          const res = await fetch(url, fetchOptions)
           clearTimeout(timeoutId)
           if (!res.ok) {
             lastErr = new Error(`API error ${res.status}`)
@@ -135,17 +144,13 @@ export async function apiFetch(endpoint: string, options?: RequestInit & { cache
       // Si llega aquí, todos los intentos fallaron
       throw lastErr ?? new Error('API request failed')
     } catch (error) { 
-      // Si es un timeout o error de red, usar fallback inmediatamente 
-      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) { 
-        logger.warn(`API timeout/network error for ${endpoint}, using fallback`) 
-        // Fallbacks por endpoint 
-        if (endpoint.startsWith('/carrito')) return []; 
-        if (endpoint.startsWith('/productos')) return []; 
-      } 
-
-      // Fallbacks por endpoint para otros errores también
-      if (endpoint.startsWith('/carrito')) return [];
-      if (endpoint.startsWith('/productos')) return [];
+      // No usar fallbacks silenciosos aquí. Loggear y propagar el error para que el frontend
+      // pueda mostrar un mensaje claro y no confundir arrays vacíos con respuestas válidas.
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('fetch'))) {
+        logger.warn(`API timeout/network error for ${endpoint}: ${error.message}`)
+      } else {
+        logger.error(`API error for ${endpoint}: ${(error as any)?.message ?? error}`)
+      }
       throw error;
     } finally {
       // Clear in-flight entry once settled
@@ -168,4 +173,8 @@ export function getCacheStats(): { size: number, keys: string[] } {
     size: apiCache['cache'].size,
     keys: Array.from(apiCache['cache'].keys())
   }
+}
+
+export function getApiUrl(): string {
+  return API_URL ?? '/api'
 }
