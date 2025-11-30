@@ -226,9 +226,9 @@ export default function CheckoutPage() {
 
       // Preparar items según swagger_new.json
       const itemsMapped = cartItems.map(item => ({
-        productId: Number(item.id),
-        quantity: Number(item.quantity),
-        price: Number(item.price)
+        productoId: Number(item.id),
+        cantidad: Number(item.quantity),
+        precio: Number(item.price)
       }))
 
       const orderData = {
