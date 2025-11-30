@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,7 +19,9 @@ import { useCart } from "@/contexts/CartContext"
 import { createOrder } from "@/services/api"
 
 export default function CheckoutPage() {
+  const router = useRouter()
   const { cart, clearCart } = useCart()
+
   /**
    * @type {[string, Function]} Paso actual del checkout
    */
@@ -75,6 +78,12 @@ export default function CheckoutPage() {
    * @type {[boolean, Function]} Estado de éxito
    */
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (cart.length === 0 && !success) {
+      router.push("/carrito")
+    }
+  }, [cart, success, router])
 
   /**
    * @type {Array} Productos en el carrito
@@ -209,21 +218,59 @@ export default function CheckoutPage() {
       setLoading(true)
       setError(null)
 
+      // Preparar items con soporte para múltiples convenciones de nombres (inglés/español, camelCase/PascalCase)
+      const itemsMapped = cartItems.map(item => ({
+        productId: Number(item.id),
+        quantity: Number(item.quantity),
+        price: Number(item.price),
+        // Soporte para backend en español
+        productoId: Number(item.id),
+        cantidad: Number(item.quantity),
+        precio: Number(item.price),
+        // Soporte para PascalCase
+        ProductId: Number(item.id),
+        Quantity: Number(item.quantity),
+        Price: Number(item.price)
+      }))
+
       const orderData = {
-        items: cartItems.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: item.price
-        })),
+        items: itemsMapped,
+        Items: itemsMapped, // Soporte para PascalCase
         shipping: {
-          ...shippingData,
+          firstName: shippingData.firstName,
+          lastName: shippingData.lastName,
+          email: shippingData.email,
+          phone: shippingData.phone,
+          address: shippingData.apartment 
+            ? `${shippingData.address}, ${shippingData.apartment}` 
+            : shippingData.address,
+          city: shippingData.city,
+          state: shippingData.state,
+          zipCode: shippingData.zipCode,
           method: shippingMethod,
-          cost: shippingCost
+          cost: shippingCost,
+          // Soporte para backend en español
+          nombre: shippingData.firstName,
+          apellido: shippingData.lastName,
+          telefono: shippingData.phone,
+          direccion: shippingData.apartment 
+            ? `${shippingData.address}, ${shippingData.apartment}` 
+            : shippingData.address,
+          ciudad: shippingData.city,
+          provincia: shippingData.state,
+          codigoPostal: shippingData.zipCode,
+          metodo: shippingMethod,
+          costo: shippingCost
         },
         payment: {
           method: paymentMethod,
           details: paymentMethod === 'credit_card' ? {
-            // No enviamos datos sensibles reales en este demo, pero aquí irían tokenizados
+            cardLast4: paymentData.cardNumber.slice(-4),
+            cardName: paymentData.cardName
+          } : {},
+          // Soporte para backend en español
+          metodo: paymentMethod,
+          detalles: paymentMethod === 'credit_card' ? {
             cardLast4: paymentData.cardNumber.slice(-4),
             cardName: paymentData.cardName
           } : {}
@@ -236,6 +283,8 @@ export default function CheckoutPage() {
         },
         date: new Date().toISOString()
       }
+
+      console.log("Enviando orden:", orderData) // Para depuración
 
       await createOrder(orderData)
 
@@ -739,7 +788,7 @@ export default function CheckoutPage() {
                             <div className="relative w-16 h-16">
                               <Image
                                 src={item.image || "/placeholder.svg"}
-                                alt={item.name}
+                                alt={item.name || "Producto"}
                                 fill
                                 className="object-contain"
                               />

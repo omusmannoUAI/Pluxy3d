@@ -52,7 +52,7 @@ export default function FavoritesPage() {
               <div className="relative aspect-square">
                 <Image
                   src={product.image || "/placeholder.svg"}
-                  alt={product.name}
+                  alt={product.name || "Producto favorito"}
                   fill
                   className="object-cover rounded-t-lg"
                 />

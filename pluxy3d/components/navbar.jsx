@@ -280,7 +280,7 @@ export default function Navbar() {
                 <Button variant="ghost" size="icon" aria-label="Cuenta" className="relative shrink-0">
                   {user?.avatar ? (
                     <div className="relative w-8 h-8 rounded-full overflow-hidden">
-                      <Image src={user.avatar || "/placeholder.svg"} alt={user.name} fill className="object-cover" />
+                      <Image src={user.avatar || "/placeholder.svg"} alt={user.name || user.nombre || "Avatar de usuario"} fill className="object-cover" />
                     </div>
                   ) : (
                     <User className="h-4 w-4" />
@@ -290,7 +290,7 @@ export default function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name}</p>
+                    <p className="text-sm font-medium leading-none">{user?.name || user?.nombre}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                     {user?.role === "admin" && (
                       <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 w-fit text-xs">

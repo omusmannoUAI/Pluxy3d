@@ -237,6 +237,82 @@ export async function getUsers() {
 }
 
 /**
+ * Función para iniciar sesión
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<Object>}
+ */
+export async function loginUser(email, password) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/Auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    if (!response.ok) {
+      let errorData = {}
+      try {
+        // Intentar leer como texto primero para evitar errores de parsing si no es JSON
+        const text = await response.text()
+        try {
+          errorData = JSON.parse(text)
+        } catch {
+          // Si no es JSON, usar el texto como mensaje
+          errorData = { message: text || `Error ${response.status}` }
+        }
+      } catch (e) {
+        console.error("Error reading error response:", e)
+        errorData = { message: `Error ${response.status}` }
+      }
+      throw new Error(errorData.message || `Error ${response.status}: Credenciales inválidas`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error en login:", error)
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      throw new Error("No se pudo conectar con el servidor. ")
+    }
+    throw error
+  }
+}
+
+/**
+ * Función para registrar usuario
+ * @param {Object} userData
+ * @returns {Promise<Object>}
+ */
+export async function registerUser(userData) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/Auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nombre: userData.name,
+        email: userData.email,
+        password: userData.password,
+        telefono: userData.phone || ""
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `Error ${response.status}: No se pudo registrar`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Error en registro:", error)
+    throw error
+  }
+}
+
+/**
  * Función para crear un pedido
  * @param {Object} orderData - Datos del pedido
  * @returns {Promise<Object>} - Pedido creado
@@ -260,8 +336,28 @@ export async function createOrder(orderData) {
       body: JSON.stringify(orderData),
     })
 
+    if (response.status === 401) {
+      // Manejo de error 401 - Token expirado o inválido
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      window.location.href = "/login?expired=true"
+      throw new Error("Sesión expirada. Por favor inicia sesión nuevamente.")
+    }
+
     if (!response.ok) {
-      throw new Error(`Error al crear el pedido: ${response.status}`)
+      let errorMessage = `Error al crear el pedido: ${response.status}`
+      try {
+        const errorData = await response.text()
+        try {
+          const jsonError = JSON.parse(errorData)
+          errorMessage = jsonError.message || jsonError.title || JSON.stringify(jsonError)
+        } catch {
+          errorMessage = errorData || errorMessage
+        }
+      } catch (e) {
+        console.error("Error reading error response:", e)
+      }
+      throw new Error(errorMessage)
     }
 
     return await response.json()

@@ -115,7 +115,7 @@ export default function CartPage() {
                   <div key={item.id}>
                     <div className="flex flex-col sm:flex-row gap-4">
                       <div className="relative w-full sm:w-24 h-24">
-                        <Image src={item.imageUrl || item.image || "/placeholder.svg"} alt={item.name} fill className="object-contain" />
+                        <Image src={item.imageUrl || item.image || "/placeholder.svg"} alt={item.name || "Producto"} fill className="object-contain" />
                       </div>
                       <div className="flex-grow space-y-2">
                         <h3 className="font-medium">{item.name}</h3>

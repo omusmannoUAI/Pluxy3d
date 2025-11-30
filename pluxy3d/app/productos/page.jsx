@@ -470,7 +470,7 @@ function ProductCard({ product, viewMode = "grid" }) {
       <div className={`relative ${isListView ? "w-48 shrink-0" : "aspect-square"}`}>
         <Image
           src={product.imageUrl || "/placeholder.svg?height=300&width=400"}
-          alt={product.name}
+          alt={product.name || "Producto"}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
         />

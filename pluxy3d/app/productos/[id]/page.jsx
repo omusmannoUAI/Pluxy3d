@@ -158,7 +158,7 @@ export default function ProductDetailPage({ params }) {
           <div className="relative h-[400px] w-full mb-4 border rounded-lg overflow-hidden">
             <Image
               src={product.imageUrl || "/placeholder.svg?height=400&width=400"}
-              alt={product.name}
+              alt={product.name || "Producto"}
               fill
               className="object-contain"
             />
@@ -171,7 +171,7 @@ export default function ProductDetailPage({ params }) {
                 <div key={index} className="relative h-20 border rounded cursor-pointer hover:border-purple-600">
                   <Image
                     src={img || "/placeholder.svg"}
-                    alt={`${product.name} - imagen ${index + 1}`}
+                    alt={`${product.name || "Producto"} - imagen ${index + 1}`}
                     fill
                     className="object-cover"
                   />
@@ -379,7 +379,7 @@ export default function ProductDetailPage({ params }) {
                 <div className="relative h-40 w-full">
                   <Image
                     src={relatedProduct.imageUrl || "/placeholder.svg?height=200&width=200"}
-                    alt={relatedProduct.name}
+                    alt={relatedProduct.name || "Producto relacionado"}
                     fill
                     className="object-cover"
                   />

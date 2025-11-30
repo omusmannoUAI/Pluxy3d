@@ -231,7 +231,7 @@ export default function AccountPage() {
               <div className="relative w-20 h-20 mx-auto mb-4">
                 <Image
                   src={user.avatar || "/placeholder.svg?height=80&width=80"}
-                  alt={user.name}
+                  alt={user.name || "Avatar de usuario"}
                   fill
                   className="rounded-full object-cover"
                 />
