@@ -1,232 +1,214 @@
 "use client"
 
-import dynamic from "next/dynamic"
-import React from "react"
+import { useEffect, useState } from "react"
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  ShoppingBag, 
+  DollarSign,
+  Calendar
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { getAnalytics } from "@/services/api"
 
-type KPI = { visitors: number; conversionRate: number; avgOrderValue: number; timeOnSiteSec: number }
-type TrafficPoint = { day: string; visitantes: number }
-type FunnelStep = { name: string; value: number }
-type PieSlice = { name: string; value: number }
-type SourceSlice = { name: string; value: number; color: string }
-type CategoryPerf = { name: string; percent: number; revenue: number }
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
-type AnalyticsResponse = {
-  kpis: KPI
-  trafficByDay: TrafficPoint[]
-  funnel: FunnelStep[]
-  topSellers: PieSlice[]
-  trafficSources: SourceSlice[]
-  categoryPerformance: CategoryPerf[]
-}
+export default function AnalyticsPage() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-export default function AdminAnaliticasPage() {
-  const TopSellersPieChart = dynamic(() => import("@/components/charts/TopSellersPieChart"), {
-    ssr: false,
-    loading: () => <div className="h-72 animate-pulse rounded bg-muted" />,
-  })
-  const TrafficLineChart = dynamic(() => import("@/components/charts/TrafficLineChart"), {
-    ssr: false,
-    loading: () => <div className="h-80 animate-pulse rounded bg-muted" />,
-  })
-  const ConversionFunnelDonut = dynamic(() => import("@/components/charts/ConversionFunnelDonut"), {
-    ssr: false,
-    loading: () => <div className="h-80 animate-pulse rounded bg-muted" />,
-  })
+  useEffect(() => {
+    loadAnalytics()
+  }, [])
 
-  const [range, setRange] = React.useState("30d")
-  const [data, setData] = React.useState<AnalyticsResponse | null>(null)
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    let disposed = false
+  const loadAnalytics = async () => {
     setLoading(true)
-    fetch(`/api/analytics?range=${encodeURIComponent(range)}`)
-      .then((r) => r.json())
-      .then((json: AnalyticsResponse) => {
-        if (!disposed) setData(json)
-      })
-      .catch(() => {
-        if (!disposed) setData(null)
-      })
-      .finally(() => {
-        if (!disposed) setLoading(false)
-      })
-    return () => {
-      disposed = true
+    try {
+      const analyticsData = await getAnalytics()
+      setData(analyticsData)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoading(false)
     }
-  }, [range])
-
-  const moneyFmt = (v: number) =>
-    new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(v)
-  const timeFmt = (sec: number) => {
-    const m = Math.floor(sec / 60)
-    const s = sec % 60
-    return `${m}m ${s}s`
   }
+
+  if (loading || !data) {
+    return <div className="p-8 text-center">Cargando analíticas...</div>
+  }
+
+  const salesChartData = {
+    labels: data.salesHistory.map((d: any) => d.month),
+    datasets: [
+      {
+        label: 'Ventas ($)',
+        data: data.salesHistory.map((d: any) => d.amount),
+        borderColor: 'rgb(147, 51, 234)',
+        backgroundColor: 'rgba(147, 51, 234, 0.5)',
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const categoryChartData = {
+    labels: data.categoryDistribution.map((d: any) => d.category),
+    datasets: [
+      {
+        label: '# de Ventas',
+        data: data.categoryDistribution.map((d: any) => d.count),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header KPIs and range */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold">Analíticas Avanzadas</h2>
+      <div className="flex items-center justify-between">
         <div>
-          <select className="h-9 rounded-md border px-2 text-sm" value={range} onChange={(e) => setRange(e.target.value)}>
-            <option value="30d">Últimos 30 días</option>
-            <option value="7d">Últimos 7 días</option>
-            <option value="this-month">Este mes</option>
-            <option value="last-month">Mes anterior</option>
-          </select>
+          <h1 className="text-3xl font-bold tracking-tight">Analíticas</h1>
+          <p className="text-muted-foreground">Reportes y estadísticas de la tienda</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select defaultValue="30days">
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Últimos 30 días" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">Últimos 7 días</SelectItem>
+              <SelectItem value="30days">Últimos 30 días</SelectItem>
+              <SelectItem value="90days">Últimos 3 meses</SelectItem>
+              <SelectItem value="year">Este año</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon">
+            <Calendar className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Visitantes Únicos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading || !data ? "—" : new Intl.NumberFormat("es-AR").format(data.kpis.visitors)}</div>
-            <div className="text-xs text-muted-foreground">+12.5% vs mes anterior</div>
+            <div className="text-2xl font-bold">${data.totalRevenue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-500 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1" /> +20.1%
+              </span>
+              vs mes anterior
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Tasa de Conversión</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ventas</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading || !data ? "—" : `${(data.kpis.conversionRate * 100).toFixed(1)}%`}</div>
-            <div className="text-xs text-muted-foreground">+0.3% vs mes anterior</div>
+            <div className="text-2xl font-bold">+{data.totalSales}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-500 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1" /> +15%
+              </span>
+              vs mes anterior
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Valor Promedio Pedido</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading || !data ? "—" : moneyFmt(data.kpis.avgOrderValue)}</div>
-            <div className="text-xs text-muted-foreground">+8.2% vs mes anterior</div>
+            <div className="text-2xl font-bold">+{data.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-500 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1" /> +7%
+              </span>
+              vs mes anterior
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">Tiempo en Sitio</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{loading || !data ? "—" : timeFmt(data.kpis.timeOnSiteSec)}</div>
-            <div className="text-xs text-muted-foreground">+15s vs mes anterior</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Traffic and Funnel */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Tráfico del Sitio Web</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 w-full">
-              {loading || !data ? (
-                <div className="h-full w-full animate-pulse rounded bg-muted" />
-              ) : (
-                <TrafficLineChart data={data.trafficByDay} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Embudo de Conversión</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 w-full">
-              {loading || !data ? (
-                <div className="h-full w-full animate-pulse rounded bg-muted" />
-              ) : (
-                <ConversionFunnelDonut data={data.funnel} />
-              )}
-            </div>
+            <div className="text-2xl font-bold">{data.conversionRate}%</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-red-500 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1 rotate-180" /> -2%
+              </span>
+              vs mes anterior
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Sellers and Traffic Sources */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Productos Más Vendidos</CardTitle>
+            <CardTitle>Resumen de Ventas</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-72 w-full">
-              {loading || !data ? (
-                <div className="h-full w-full animate-pulse rounded bg-muted" />
-              ) : (
-                <TopSellersPieChart data={data.topSellers} />
-              )}
+          <CardContent className="pl-2">
+            <div className="h-[300px]">
+              <Line options={{ maintainAspectRatio: false }} data={salesChartData} />
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Fuentes de Tráfico</CardTitle>
+            <CardTitle>Ventas por Categoría</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2 text-sm">
-              {(loading || !data ? [] : data.trafficSources).map((s) => (
-                <div key={s.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-                    <span>{s.name}</span>
-                  </div>
-                  <span className="font-medium">{s.value}%</span>
-                </div>
-              ))}
+            <div className="h-[300px] flex items-center justify-center">
+              <Doughnut options={{ maintainAspectRatio: false }} data={categoryChartData} />
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Category performance */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rendimiento por Categorías</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {(loading || !data ? [] : data.categoryPerformance).map((c) => (
-              <div key={c.name} className="rounded-lg border p-4 text-center">
-                <div className="text-2xl font-bold text-purple-600">{c.percent}%</div>
-                <div className="text-sm">{c.name}</div>
-                <div className="text-xs text-muted-foreground">{moneyFmt(c.revenue)} en ingresos</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Export */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Reportes y Exportación</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              className="rounded border px-3 py-2 text-sm"
-              href={`/api/analytics/export?range=${encodeURIComponent(range)}`}
-            >
-              ⬇ Exportar Analíticas (CSV)
-            </a>
-            <button className="rounded border px-3 py-2 text-sm opacity-60" disabled>
-              ⬇ Reporte de Usuarios (próximamente)
-            </button>
-            <button className="rounded border px-3 py-2 text-sm opacity-60" disabled>
-              ⬇ Reporte de Inventario (próximamente)
-            </button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

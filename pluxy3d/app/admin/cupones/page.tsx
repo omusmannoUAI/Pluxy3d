@@ -1,54 +1,193 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react"
+import { 
+  Search, 
+  Download, 
+  RefreshCw, 
+  Ticket, 
+  CheckCircle2, 
+  Activity, 
+  DollarSign,
+  Edit,
+  Eye,
+  Copy,
+  Trash2,
+  Plus
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { TicketPercent } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { getCoupons } from "@/services/api"
 
-const cupones = [
-  { code: "DESCUENTO10", desc: "10% de descuento en toda la tienda", start: "2024-01-01", end: "2024-12-31", used: 45, limit: 100, type: "10%", min: "$50,000" },
-  { code: "ENVIOGRATIS", desc: "Envio gratis en compras mayores a $100.000", start: "2024-01-15", end: "2024-06-30", used: 23, limit: 50, type: "Envío Gratis", min: "$100,000" },
-  { code: "BIENVENIDA", desc: "Descuento de bienvenida para nuevos usuarios", start: "2024-01-01", end: "2024-12-31", used: 0, limit: 1, type: "$15,000", min: "$0" },
-]
+export default function CouponsPage() {
+  const [coupons, setCoupons] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-export default function AdminCuponesPage() {
+  useEffect(() => {
+    loadCoupons()
+  }, [])
+
+  const loadCoupons = async () => {
+    setLoading(true)
+    try {
+      const data = await getCoupons()
+      setCoupons(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error(error)
+      setCoupons([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const stats = [
+    {
+      title: "Total Cupones",
+      value: coupons.length,
+      icon: Ticket,
+      color: "text-blue-600",
+      bg: "bg-blue-100",
+    },
+    {
+      title: "Activos",
+      value: coupons.filter(c => c.status === "Active").length,
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bg: "bg-green-100",
+    },
+    {
+      title: "Usos Totales",
+      value: coupons.reduce((acc, curr) => acc + (curr.uses || 0), 0),
+      icon: Activity,
+      color: "text-purple-600",
+      bg: "bg-purple-100",
+    },
+    {
+      title: "Descuento Total",
+      value: "$2.1M", // Mocked
+      icon: DollarSign,
+      color: "text-yellow-600",
+      bg: "bg-yellow-100",
+    },
+  ]
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Gestión de Cupones</h2>
-        <Button><span className="mr-2">+</span>Nuevo Cupón</Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Cupones</h1>
+          <p className="text-muted-foreground">Gestiona cupones</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={loadCoupons}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Administra cupones de descuento y promociones</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {cupones.map(c => (
-              <div key={c.code} className="rounded-lg border p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <TicketPercent className="h-5 w-5 text-emerald-600" />
+
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-lg font-semibold text-muted-foreground">Administra cupones de descuento y promociones</h2>
+          <Button className="bg-purple-600 hover:bg-purple-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Cupón
+          </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, index) => (
+            <Card key={index} className="p-4 flex items-center gap-4">
+              <div className={`p-3 rounded-lg ${stat.bg}`}>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                <h3 className="text-2xl font-bold">{stat.value}</h3>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar cupones..." className="pl-8" />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Todos los estados" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                <SelectItem value="active">Activos</SelectItem>
+                <SelectItem value="expired">Expirados</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {coupons.map((coupon) => (
+            <Card key={coupon.id} className="p-6">
+              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                <div className="flex gap-4 items-center">
+                  <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                    <span className="text-purple-600 font-bold text-lg">%</span>
                   </div>
                   <div>
-                    <div className="font-medium">{c.code}</div>
-                    <div className="text-sm text-muted-foreground">{c.desc}</div>
-                    <div className="text-xs text-muted-foreground">Válido: {c.start} - {c.end}</div>
-                    <div className="text-xs text-muted-foreground">Usado: {c.used}/{c.limit}</div>
+                    <h3 className="font-bold text-lg">{coupon.code}</h3>
+                    <p className="text-sm text-muted-foreground">{coupon.description}</p>
+                    <div className="flex gap-2 items-center mt-1">
+                      <span className="text-sm font-medium text-purple-600">{coupon.discount} de descuento</span>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground">Válido: {coupon.validUntil}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">Activo</Badge>
-                  <div className="text-right text-sm">
-                    <div className="font-medium">{c.type}</div>
-                    <div className="text-muted-foreground">Min: {c.min}</div>
+
+                <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-end">
+                  <div className="text-right">
+                    <Badge variant={coupon.status === "Active" ? "secondary" : "destructive"} className={`mb-1 ${coupon.status === "Active" ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-red-100 text-red-800 hover:bg-red-100"}`}>
+                      {coupon.status === "Active" ? "Activo" : "Expirado"}
+                    </Badge>
+                    <p className="text-sm font-medium">{coupon.uses}/{coupon.maxUses} usos</p>
+                    <p className="text-xs text-muted-foreground">Min: ${coupon.minPurchase?.toLocaleString()}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

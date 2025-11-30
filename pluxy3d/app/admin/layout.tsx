@@ -1,63 +1,45 @@
-"use client"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { AdminSidebar } from "@/components/admin-sidebar"
+import { Separator } from "@/components/ui/separator"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { AdminSidebar } from "@/components/admin/AdminSidebar"
-import { AdminHeader } from "@/components/admin/AdminHeader"
-
-const pageTitles: Record<string, { title: string; subtitle?: string }> = {
-  resumen: { title: "Dashboard", subtitle: "Resumen general de tu tienda" },
-  usuarios: { title: "Usuarios", subtitle: "Gestiona usuarios registrados en la plataforma" },
-  pedidos: { title: "Pedidos", subtitle: "Gestiona pedidos" },
-  productos: { title: "Productos" },
-  inventario: { title: "Inventario" },
-  categorias: { title: "Categorías" },
-  cupones: { title: "Cupones" },
-  resenas: { title: "Reseñas" },
-  mensajes: { title: "Mensajes" },
-  soporte: { title: "Soporte" },
-  contenido: { title: "Contenido" },
-  config: { title: "Configuración" },
-  analiticas: { title: "Analíticas" },
-}
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
-  useEffect(() => {
-    if (!user) router.replace("/login")
-    else if (user.role !== 'admin') router.replace("/")
-  }, [user, router])
-
-  if (!user || user.role !== 'admin') return null
-
-  // Get current page from URL
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
-  const activeSlug = currentPath.split("/").pop() || "resumen"
-  const pageInfo = pageTitles[activeSlug] || { title: "Dashboard" }
-
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar */}
-      <AdminSidebar isCollapsed={sidebarCollapsed} />
-      
-      {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <AdminHeader
-          title={pageInfo.title}
-          subtitle={pageInfo.subtitle}
-          onMenuClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="/admin">Admin</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {children}
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
