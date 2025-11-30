@@ -2,6 +2,9 @@
   "name": "pluxy3d",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",

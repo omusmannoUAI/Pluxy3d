@@ -218,24 +218,21 @@ export default function CheckoutPage() {
       setLoading(true)
       setError(null)
 
-      // Preparar items con soporte para múltiples convenciones de nombres (inglés/español, camelCase/PascalCase)
+      if (cartItems.length === 0) {
+        setError("El carrito está vacío.")
+        setLoading(false)
+        return
+      }
+
+      // Preparar items según swagger_new.json
       const itemsMapped = cartItems.map(item => ({
         productId: Number(item.id),
         quantity: Number(item.quantity),
-        price: Number(item.price),
-        // Soporte para backend en español
-        productoId: Number(item.id),
-        cantidad: Number(item.quantity),
-        precio: Number(item.price),
-        // Soporte para PascalCase
-        ProductId: Number(item.id),
-        Quantity: Number(item.quantity),
-        Price: Number(item.price)
+        price: Number(item.price)
       }))
 
       const orderData = {
         items: itemsMapped,
-        Items: itemsMapped, // Soporte para PascalCase
         shipping: {
           firstName: shippingData.firstName,
           lastName: shippingData.lastName,
@@ -248,29 +245,11 @@ export default function CheckoutPage() {
           state: shippingData.state,
           zipCode: shippingData.zipCode,
           method: shippingMethod,
-          cost: shippingCost,
-          // Soporte para backend en español
-          nombre: shippingData.firstName,
-          apellido: shippingData.lastName,
-          telefono: shippingData.phone,
-          direccion: shippingData.apartment 
-            ? `${shippingData.address}, ${shippingData.apartment}` 
-            : shippingData.address,
-          ciudad: shippingData.city,
-          provincia: shippingData.state,
-          codigoPostal: shippingData.zipCode,
-          metodo: shippingMethod,
-          costo: shippingCost
+          cost: shippingCost
         },
         payment: {
           method: paymentMethod,
           details: paymentMethod === 'credit_card' ? {
-            cardLast4: paymentData.cardNumber.slice(-4),
-            cardName: paymentData.cardName
-          } : {},
-          // Soporte para backend en español
-          metodo: paymentMethod,
-          detalles: paymentMethod === 'credit_card' ? {
             cardLast4: paymentData.cardNumber.slice(-4),
             cardName: paymentData.cardName
           } : {}
@@ -295,7 +274,7 @@ export default function CheckoutPage() {
       clearCart()
     } catch (err) {
       console.error("Error al procesar el pedido:", err)
-      setError("Ocurrió un error al procesar tu pedido. Por favor, intenta de nuevo.")
+      setError(err.message || "Ocurrió un error al procesar tu pedido. Por favor, intenta de nuevo.")
     } finally {
       setLoading(false)
     }
