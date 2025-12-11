@@ -50,6 +50,8 @@ export default function AdminDashboard() {
     progress: { value: "0%", change: "Meta mensual", trend: "neutral" }
   })
   const [chartData, setChartData] = useState<any[]>([])
+  const [chartViewMode, setChartViewMode] = useState<'monthly' | 'daily'>('daily')
+  const [chartDataMap, setChartDataMap] = useState<{ monthly: any[], daily: any[] }>({ monthly: [], daily: [] })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [performanceMetrics, setPerformanceMetrics] = useState({
     productsSold: 0,
@@ -133,21 +135,25 @@ export default function AdminDashboard() {
         })
 
         const salesProgress = analyticsData.salesProgress || analyticsData.SalesProgress || []
-        // Prefer fallback (daily) if API returns monthly and we have few data points, or if API data is empty
-        const useFallback = !salesProgress.length || (salesProgress.length < 3 && Object.keys(fallbackSalesProgress).length > salesProgress.length);
         
-        const chartSource = !useFallback
-          ? salesProgress
-          : Object.entries(fallbackSalesProgress)
-              .map(([dateStr, values]: [string, any]) => ({ month: dateStr, amount: values.amount }))
-              .sort((a, b) => a.month.localeCompare(b.month))
+        // 1. Datos Mensuales (Desde API o agrupados)
+        const monthlyData = salesProgress.map((item: any) => ({
+            month: item.month || "",
+            sales: Number(item.amount ?? item.Amount ?? 0)
+        }))
 
-        setChartData(chartSource
-          ? chartSource.map((item: any) => ({
-              month: item.month || "",
-              sales: Number(item.amount ?? item.Amount ?? 0)
-            }))
-          : [])
+        // 2. Datos Diarios (Desde Fallback calculado localmente)
+        const dailyData = Object.entries(fallbackSalesProgress)
+            .map(([dateStr, values]: [string, any]) => ({ month: dateStr, sales: values.amount }))
+            .sort((a, b) => a.month.localeCompare(b.month))
+
+        setChartDataMap({
+            monthly: monthlyData.length > 0 ? monthlyData : dailyData, // Si no hay mensual, usar diario como fallback
+            daily: dailyData
+        })
+
+        // Inicializar con la vista por defecto (daily)
+        setChartData(dailyData.length > 0 ? dailyData : monthlyData)
 
         // Process Recent Orders
         const sortedOrders = Array.isArray(ordersData) ? ordersData.slice(0, 5) : []
@@ -192,6 +198,11 @@ export default function AdminDashboard() {
       label: "Ventas",
       color: "#8b5cf6",
     },
+  }
+
+  const handleViewModeChange = (mode: 'monthly' | 'daily') => {
+    setChartViewMode(mode)
+    setChartData(chartDataMap[mode])
   }
 
   if (loading) {
@@ -333,7 +344,24 @@ export default function AdminDashboard() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Progreso de Ventas</CardTitle>
-            <Button variant="outline" size="sm">Ver detalles</Button>
+            <div className="flex items-center gap-2">
+                <Button 
+                    variant={chartViewMode === 'daily' ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => handleViewModeChange('daily')}
+                    className={chartViewMode === 'daily' ? "bg-slate-900 text-white" : ""}
+                >
+                    Diario
+                </Button>
+                <Button 
+                    variant={chartViewMode === 'monthly' ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => handleViewModeChange('monthly')}
+                    className={chartViewMode === 'monthly' ? "bg-slate-900 text-white" : ""}
+                >
+                    Mensual
+                </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full">
@@ -352,11 +380,31 @@ export default function AdminDashboard() {
                       tickLine={false} 
                       axisLine={false} 
                       tickMargin={10} 
+                      tickFormatter={(value) => {
+                        if (!value) return ""
+                        // Si es formato fecha ISO (YYYY-MM-DD), formatear
+                        if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+                          const date = new Date(value)
+                          // Si estamos en vista mensual, mostrar solo Mes Año
+                          if (chartViewMode === 'monthly') {
+                             return date.toLocaleDateString("es-MX", { month: "short", year: "numeric" })
+                          }
+                          // Si estamos en vista diaria, mostrar Día Mes
+                          return date.toLocaleDateString("es-MX", { day: "numeric", month: "short" })
+                        }
+                        return value
+                      }}
                     />
                     <YAxis 
                       tickLine={false} 
                       axisLine={false} 
-                      tickFormatter={(value) => `$${value}`} 
+                      width={80}
+                      tickFormatter={(value) => new Intl.NumberFormat("es-MX", { 
+                        style: "currency", 
+                        currency: "MXN", 
+                        notation: "compact",
+                        maximumFractionDigits: 1 
+                      }).format(value)} 
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Area 
