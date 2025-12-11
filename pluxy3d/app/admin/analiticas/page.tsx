@@ -70,11 +70,11 @@ export default function AnalyticsPage() {
   }
 
   const salesChartData = {
-    labels: data.salesHistory.map((d: any) => d.month),
+    labels: data.salesProgress.map((d: any) => d.month),
     datasets: [
       {
         label: 'Ventas ($)',
-        data: data.salesHistory.map((d: any) => d.amount),
+        data: data.salesProgress.map((d: any) => d.amount),
         borderColor: 'rgb(147, 51, 234)',
         backgroundColor: 'rgba(147, 51, 234, 0.5)',
         tension: 0.3,

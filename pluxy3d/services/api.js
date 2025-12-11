@@ -246,6 +246,23 @@ export async function getUsers() {
 }
 
 /**
+ * Función para obtener un usuario por ID
+ * @param {string} id
+ * @returns {Promise<Object>}
+ */
+export async function getUserById(id) {
+  try {
+    const url = `${API_BASE_URL}/Users/${id}`
+    const response = await fetch(url)
+    if (!response.ok) throw new Error("Usuario no encontrado")
+    return await response.json()
+  } catch (e) {
+    console.error("Error al obtener usuario:", e)
+    throw e
+  }
+}
+
+/**
  * Función para iniciar sesión
  * @param {string} email
  * @param {string} password
@@ -435,6 +452,67 @@ export async function getAllOrders() {
 }
 
 /**
+ * Obtiene un pedido por ID
+ * @param {number} id
+ * @returns {Promise<Object>}
+ */
+export async function getOrderById(id) {
+  try {
+    const url = `${API_BASE_URL}/Orders/${id}`
+    const token = localStorage.getItem("token")
+    
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (!response.ok) throw new Error("Error al obtener el pedido")
+    return await response.json()
+  } catch (e) {
+    console.error(`Error al obtener pedido ${id}:`, e)
+    throw e
+  }
+}
+
+/**
+ * Actualiza el estado de un pedido
+ * @param {number} id
+ * @param {number} statusId
+ * @returns {Promise<boolean>}
+ */
+export async function updateOrderStatus(id, statusId) {
+  try {
+    const url = `${API_BASE_URL}/Orders/${id}/status`
+    const token = localStorage.getItem("token")
+    
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: headers,
+      body: JSON.stringify({ statusId })
+    })
+
+    if (!response.ok) throw new Error("Error al actualizar estado")
+    return true
+  } catch (e) {
+    console.error(`Error al actualizar estado del pedido ${id}:`, e)
+    return false
+  }
+}
+
+/**
  * Función para obtener analíticas
  * @returns {Promise<Object>}
  */
@@ -463,6 +541,14 @@ function mapAnalyticsFromApi(data) {
       }))
     : []
 
+  const rawCategoryDistribution = analytics.categoryDistribution || analytics.CategoryDistribution || []
+  const categoryDistribution = Array.isArray(rawCategoryDistribution)
+    ? rawCategoryDistribution.map((item) => ({
+        category: item.category ?? item.Category ?? "Sin Categoría",
+        count: Number(item.count ?? item.Count ?? 0),
+      }))
+    : []
+
   return {
     totalRevenue: Number(analytics.totalRevenue ?? analytics.TotalRevenue ?? 0),
     revenueGrowth: Number(analytics.revenueGrowth ?? analytics.RevenueGrowth ?? 0),
@@ -473,7 +559,11 @@ function mapAnalyticsFromApi(data) {
     conversionRate: Number(analytics.conversionRate ?? analytics.ConversionRate ?? 0),
     salesProgress,
     topProducts: Array.isArray(analytics.topProducts) ? analytics.topProducts : Array.isArray(analytics.TopProducts) ? analytics.TopProducts : [],
+    topProductsMonth: Array.isArray(analytics.topProductsMonth) ? analytics.topProductsMonth : Array.isArray(analytics.TopProductsMonth) ? analytics.TopProductsMonth : [],
+    topProductsYear: Array.isArray(analytics.topProductsYear) ? analytics.topProductsYear : Array.isArray(analytics.TopProductsYear) ? analytics.TopProductsYear : [],
+    lowStockProducts: Array.isArray(analytics.lowStockProducts) ? analytics.lowStockProducts : Array.isArray(analytics.LowStockProducts) ? analytics.LowStockProducts : [],
     ordersByStatus: analytics.ordersByStatus || analytics.OrdersByStatus || {},
+    categoryDistribution,
   }
 }
 

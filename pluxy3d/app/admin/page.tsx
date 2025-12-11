@@ -12,10 +12,14 @@ import {
   Search,
   Bell,
   Printer,
-  CheckCircle2,
+  CheckCircle,
   Clock,
   XCircle,
-  Package
+  Package,
+  AlertCircle,
+  RefreshCw,
+  Truck,
+  CreditCard
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,6 +30,16 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tool
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { getAnalytics, getAllOrders, getUsers } from "@/services/api"
 import Link from "next/link"
+
+// Definición de estados según base de datos (Misma configuración que en Pedidos)
+const ORDER_STATUSES = {
+  0: { label: "Pendiente", color: "bg-slate-100 text-slate-800 border-slate-200", icon: Clock },
+  1: { label: "Procesando", color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: RefreshCw },
+  2: { label: "Pagada", color: "bg-blue-100 text-blue-800 border-blue-200", icon: CreditCard },
+  3: { label: "Enviada", color: "bg-purple-100 text-purple-800 border-purple-200", icon: Truck },
+  4: { label: "Cancelada", color: "bg-red-100 text-red-800 border-red-200", icon: XCircle },
+  5: { label: "Entregada", color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle },
+}
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
@@ -41,7 +55,10 @@ export default function AdminDashboard() {
     productsSold: 0,
     avgResponseTime: "0 min",
     conversionRate: "0%",
-    customerSatisfaction: "0/5"
+    customerSatisfaction: "0/5",
+    topProductsMonth: [] as any[],
+    topProductsYear: [] as any[],
+    lowStockProducts: [] as any[]
   })
 
   useEffect(() => {
@@ -135,9 +152,6 @@ export default function AdminDashboard() {
         // Process Recent Orders
         const sortedOrders = Array.isArray(ordersData) ? ordersData.slice(0, 5) : []
         setRecentOrders(sortedOrders.map((order: any) => {
-          // Map directly from API response (OrderSummaryDto)
-          const status = order.estado || order.Estado || 'Pendiente';
-          const normalizedStatus = String(status).toLowerCase();
           const rawDate = order.fechaVenta || order.FechaVenta
           const orderDate = rawDate ? new Date(rawDate) : null
           const amountValue = order.total ?? order.Total ?? 0
@@ -147,10 +161,8 @@ export default function AdminDashboard() {
             user: order.nombreUsuario || order.NombreUsuario || 'Usuario',
             date: orderDate ? orderDate.toLocaleDateString() : '',
             amount: `$${amountValue.toLocaleString()}`,
-            status: normalizedStatus,
-            statusLabel: normalizedStatus === 'completed' || normalizedStatus === 'completado' ? 'Completado' : 
-                         normalizedStatus === 'processing' || normalizedStatus === 'en proceso' ? 'En proceso' : 
-                         normalizedStatus === 'shipped' || normalizedStatus === 'enviado' ? 'Enviado' : 'Pendiente'
+            statusId: order.estadoId ?? order.EstadoId ?? 0,
+            statusName: order.estadoNombre || order.EstadoNombre || 'Pendiente'
           };
         }))
 
@@ -159,7 +171,10 @@ export default function AdminDashboard() {
           productsSold: (analyticsData.topProducts || analyticsData.TopProducts || []).reduce((sum: number, product: any) => sum + Number(product.totalVendido ?? product.TotalVendido ?? product.total ?? 0), 0) || ordersCount,
           avgResponseTime: "2h 14m", 
           conversionRate: `${conversion.toFixed(1)}%`,
-          customerSatisfaction: "4.8/5" 
+          customerSatisfaction: "4.8/5",
+          topProductsMonth: analyticsData.topProductsMonth || analyticsData.TopProductsMonth || [],
+          topProductsYear: analyticsData.topProductsYear || analyticsData.TopProductsYear || [],
+          lowStockProducts: analyticsData.lowStockProducts || analyticsData.LowStockProducts || []
         })
 
       } catch (error) {
@@ -275,6 +290,43 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Low Stock Alerts */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            <CardTitle className="text-lg font-semibold text-red-600">Alerta de Stock Bajo</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {performanceMetrics.lowStockProducts.length > 0 ? (
+              performanceMetrics.lowStockProducts.map((product: any) => (
+                <div key={product.id || product.Id} className="flex items-center justify-between p-3 border border-red-100 bg-red-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded bg-white flex items-center justify-center text-xs font-bold border border-red-100">
+                      {product.nombre?.substring(0, 2).toUpperCase() || product.Nombre?.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium truncate max-w-[120px]">{product.nombre || product.Nombre}</p>
+                      <p className="text-xs text-red-600 font-medium">Quedan: {product.stock || product.Stock}</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="h-8 text-xs border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800">
+                    Reponer
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-4 text-green-600 flex items-center justify-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                <p>Todo el inventario está en niveles óptimos</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart Section */}
@@ -348,18 +400,17 @@ export default function AdminDashboard() {
                         <p className="text-xs text-muted-foreground">{order.date}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">{order.amount}</p>
-                      <Badge 
-                        variant="secondary" 
-                        className={`mt-1 text-xs ${
-                          order.status === 'completed' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
-                          order.status === 'processing' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
-                          'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
-                        }`}
-                      >
-                        {order.statusLabel}
-                      </Badge>
+                    <div className="flex items-center gap-4">
+                      <div className="font-medium">{order.amount}</div>
+                      {(() => {
+                        const config = ORDER_STATUSES[order.statusId as keyof typeof ORDER_STATUSES] || { label: order.statusName, color: "bg-gray-100 text-gray-800 border-gray-200", icon: Clock }
+                        const Icon = config.icon
+                        return (
+                          <Badge className={`${config.color} hover:${config.color} border flex items-center gap-1.5 px-2.5 py-0.5 w-fit shadow-sm`}>
+                            <Icon className="h-3.5 w-3.5" /> {config.label}
+                          </Badge>
+                        )
+                      })()}
                     </div>
                   </div>
                 ))
@@ -382,32 +433,79 @@ export default function AdminDashboard() {
             <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Productos Vendidos</p>
                 <p className="text-2xl font-bold">{performanceMetrics.productsSold}</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Tiempo Promedio de Respuesta</p>
                 <p className="text-2xl font-bold">{performanceMetrics.avgResponseTime}</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Tasa de Conversión</p>
                 <p className="text-2xl font-bold">{performanceMetrics.conversionRate}</p>
               </div>
-            </div>
-            <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Satisfacción del Cliente</p>
                 <p className="text-2xl font-bold">{performanceMetrics.customerSatisfaction}</p>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+              {/* Top Products Month */}
+              <div>
+                <h3 className="text-md font-semibold mb-4">Más Vendidos (Mes)</h3>
+                <div className="space-y-4">
+                  {performanceMetrics.topProductsMonth.length > 0 ? (
+                    performanceMetrics.topProductsMonth.map((product: any) => (
+                      <div key={product.id || product.Id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded bg-gray-100 flex items-center justify-center text-xs font-bold">
+                            {product.nombre?.substring(0, 2).toUpperCase() || product.Nombre?.substring(0, 2).toUpperCase()}
+                          </div>
+                          <p className="text-sm font-medium truncate max-w-[150px]">{product.nombre || product.Nombre}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{product.totalVendido || product.TotalVendido} un.</p>
+                          <p className="text-xs text-muted-foreground">${(product.ingresos || product.Ingresos || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Top Products Year */}
+              <div>
+                <h3 className="text-md font-semibold mb-4">Más Vendidos (Año)</h3>
+                <div className="space-y-4">
+                  {performanceMetrics.topProductsYear.length > 0 ? (
+                    performanceMetrics.topProductsYear.map((product: any) => (
+                      <div key={product.id || product.Id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded bg-gray-100 flex items-center justify-center text-xs font-bold">
+                            {product.nombre?.substring(0, 2).toUpperCase() || product.Nombre?.substring(0, 2).toUpperCase()}
+                          </div>
+                          <p className="text-sm font-medium truncate max-w-[150px]">{product.nombre || product.Nombre}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold">{product.totalVendido || product.TotalVendido} un.</p>
+                          <p className="text-xs text-muted-foreground">${(product.ingresos || product.Ingresos || 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No hay datos disponibles</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
+
       </div>
     </div>
   )
