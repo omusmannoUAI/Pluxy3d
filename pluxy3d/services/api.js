@@ -392,18 +392,45 @@ export async function getAnalytics() {
     const url = `${API_BASE_URL}/Analytics`
     const response = await fetch(url)
     if (!response.ok) throw new Error(`API not available: ${response.status}`)
-    return await response.json()
+    const data = await response.json()
+    return mapAnalyticsFromApi(data)
   } catch (e) {
     console.warn("Advertencia: No se pudieron cargar las analíticas (usando datos por defecto).", e.message)
-    return {
-      totalRevenue: 0,
-      totalSales: 0,
-      activeUsers: 0,
-      conversionRate: 0,
-      salesHistory: [],
-      categoryDistribution: []
-    }
+    return mapAnalyticsFromApi(null)
   }
+}
+
+function mapAnalyticsFromApi(data) {
+  const analytics = data || {}
+
+  const rawSalesProgress = analytics.salesProgress || analytics.SalesProgress || analytics.salesHistory || []
+  const salesProgress = Array.isArray(rawSalesProgress)
+    ? rawSalesProgress.map((item) => ({
+        month: formatMonthLabel(item.month ?? item.Month),
+        amount: Number(item.amount ?? item.Amount ?? item.total ?? 0),
+        orders: Number(item.orders ?? item.Orders ?? 0),
+      }))
+    : []
+
+  return {
+    totalRevenue: Number(analytics.totalRevenue ?? analytics.TotalRevenue ?? 0),
+    revenueGrowth: Number(analytics.revenueGrowth ?? analytics.RevenueGrowth ?? 0),
+    totalOrders: Number(analytics.totalOrders ?? analytics.TotalOrders ?? analytics.totalSales ?? analytics.TotalSales ?? 0),
+    ordersGrowth: Number(analytics.ordersGrowth ?? analytics.OrdersGrowth ?? 0),
+    totalCustomers: Number(analytics.totalCustomers ?? analytics.TotalCustomers ?? analytics.activeUsers ?? analytics.ActiveUsers ?? 0),
+    customersGrowth: Number(analytics.customersGrowth ?? analytics.CustomersGrowth ?? 0),
+    conversionRate: Number(analytics.conversionRate ?? analytics.ConversionRate ?? 0),
+    salesProgress,
+    topProducts: Array.isArray(analytics.topProducts) ? analytics.topProducts : Array.isArray(analytics.TopProducts) ? analytics.TopProducts : [],
+    ordersByStatus: analytics.ordersByStatus || analytics.OrdersByStatus || {},
+  }
+}
+
+function formatMonthLabel(value) {
+  if (!value) return ""
+  const date = new Date(`${value}-01`)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString("es-ES", { month: "short", year: "numeric" })
 }
 
 /**

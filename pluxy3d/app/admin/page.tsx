@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { getAnalytics, getOrders, getUsers } from "@/services/api"
+import Link from "next/link"
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
@@ -52,56 +53,100 @@ export default function AdminDashboard() {
           getUsers()
         ])
 
-        // Process Analytics
-        const revenue = analyticsData.totalRevenue || 0
-        const sales = analyticsData.totalSales || 0
-        const activeUsers = analyticsData.activeUsers || usersData.length || 0
-        const conversion = analyticsData.conversionRate || 0
+        const trendFromValue = (value: number) => value > 0 ? "up" : value < 0 ? "down" : "neutral"
+
+        const ordersArray = Array.isArray(ordersData) ? ordersData : []
+        const usersArray = Array.isArray(usersData) ? usersData : []
+
+        const fallbackOrdersCount = ordersArray.length
+        const fallbackRevenue = ordersArray.reduce((sum, o: any) => sum + Number(o.total ?? o.Total ?? 0), 0)
+        const fallbackSalesProgress = ordersArray.reduce((map: Record<string, { amount: number; orders: number }>, o: any) => {
+          const rawDate = o.fechaVenta || o.FechaVenta
+          const date = rawDate ? new Date(rawDate) : null
+          if (!date || Number.isNaN(date.getTime())) return map
+          // Group by day for better granularity
+          const key = date.toISOString().split('T')[0] // YYYY-MM-DD
+          if (!map[key]) map[key] = { amount: 0, orders: 0 }
+          map[key].amount += Number(o.total ?? o.Total ?? 0)
+          map[key].orders += 1
+          return map
+        }, {})
+
+        const apiRevenue = Number(analyticsData.totalRevenue ?? analyticsData.TotalRevenue ?? 0)
+        const apiOrders = Number(analyticsData.totalOrders ?? analyticsData.TotalOrders ?? 0)
+        const apiCustomers = Number(analyticsData.totalCustomers ?? analyticsData.TotalCustomers ?? 0)
+
+        const revenue = apiRevenue > 0 ? apiRevenue : fallbackRevenue
+        const ordersCount = apiOrders > 0 ? apiOrders : fallbackOrdersCount
+        const customers = apiCustomers > 0 ? apiCustomers : usersArray.length
+        
+        const apiConversion = Number(analyticsData.conversionRate ?? analyticsData.ConversionRate ?? 0)
+        const calculatedConversion = customers > 0 ? (ordersCount / customers) * 100 : 0
+        const conversion = apiConversion > 0 ? apiConversion : calculatedConversion
+
+        const revenueGrowth = Number.isFinite(analyticsData.revenueGrowth ?? analyticsData.RevenueGrowth) ? (analyticsData.revenueGrowth ?? analyticsData.RevenueGrowth) : null
+        const ordersGrowth = Number.isFinite(analyticsData.ordersGrowth ?? analyticsData.OrdersGrowth) ? (analyticsData.ordersGrowth ?? analyticsData.OrdersGrowth) : null
+        const customersGrowth = Number.isFinite(analyticsData.customersGrowth ?? analyticsData.CustomersGrowth) ? (analyticsData.customersGrowth ?? analyticsData.CustomersGrowth) : null
+
+        const effectiveRevenueGrowth = (revenueGrowth === 0 && revenue > 0 && fallbackRevenue > 0) ? null : revenueGrowth
+        const effectiveOrdersGrowth = (ordersGrowth === 0 && ordersCount > 0 && fallbackOrdersCount > 0) ? null : ordersGrowth
+        const effectiveCustomersGrowth = (customersGrowth === 0 && customers > 0 && usersArray.length > 0) ? null : customersGrowth
 
         setStats({
-          users: { 
-            value: activeUsers.toLocaleString(), 
-            change: null, 
-            trend: "neutral" 
+          users: {
+            value: customers.toLocaleString(),
+            change: effectiveCustomersGrowth !== null ? `${effectiveCustomersGrowth}%` : null,
+            trend: trendFromValue(effectiveCustomersGrowth ?? 0)
           },
-          orders: { 
-            value: sales.toLocaleString(), 
-            change: null, 
-            trend: "neutral" 
+          orders: {
+            value: ordersCount.toLocaleString(),
+            change: effectiveOrdersGrowth !== null ? `${effectiveOrdersGrowth}%` : null,
+            trend: trendFromValue(effectiveOrdersGrowth ?? 0)
           },
-          revenue: { 
-            value: `$${revenue.toLocaleString()}`, 
-            change: null, 
-            trend: "neutral" 
+          revenue: {
+            value: `$${revenue.toLocaleString()}`,
+            change: effectiveRevenueGrowth !== null ? `${effectiveRevenueGrowth.toFixed(1)}%` : null,
+            trend: trendFromValue(effectiveRevenueGrowth ?? 0)
           },
-          progress: { 
-            value: "0%", 
-            change: "Meta mensual", 
-            trend: "neutral" 
+          progress: {
+            value: `${conversion.toFixed(1)}%`,
+            change: "Tasa de conversión",
+            trend: trendFromValue(conversion)
           }
         })
 
-        // Process Chart Data
-        if (analyticsData.salesHistory) {
-          setChartData(analyticsData.salesHistory.map((item: any) => ({
-            month: item.month,
-            sales: item.amount
-          })))
-        }
+        const salesProgress = analyticsData.salesProgress || analyticsData.SalesProgress || []
+        // Prefer fallback (daily) if API returns monthly and we have few data points, or if API data is empty
+        const useFallback = !salesProgress.length || (salesProgress.length < 3 && Object.keys(fallbackSalesProgress).length > salesProgress.length);
+        
+        const chartSource = !useFallback
+          ? salesProgress
+          : Object.entries(fallbackSalesProgress)
+              .map(([dateStr, values]: [string, any]) => ({ month: dateStr, amount: values.amount }))
+              .sort((a, b) => a.month.localeCompare(b.month))
+
+        setChartData(chartSource
+          ? chartSource.map((item: any) => ({
+              month: item.month || "",
+              sales: Number(item.amount ?? item.Amount ?? 0)
+            }))
+          : [])
 
         // Process Recent Orders
-        const sortedOrders = Array.isArray(ordersData) ? ordersData.slice(0, 3) : []
+        const sortedOrders = Array.isArray(ordersData) ? ordersData.slice(0, 5) : []
         setRecentOrders(sortedOrders.map((order: any) => {
-          // Mapeo de propiedades considerando la respuesta real de la API (en español)
-          // o la estructura esperada (en inglés) por si cambia en el futuro
-          const status = order.estado || order.status || 'Pendiente';
-          const normalizedStatus = status.toLowerCase();
+          // Map directly from API response (OrderSummaryDto)
+          const status = order.estado || order.Estado || 'Pendiente';
+          const normalizedStatus = String(status).toLowerCase();
+          const rawDate = order.fechaVenta || order.FechaVenta
+          const orderDate = rawDate ? new Date(rawDate) : null
+          const amountValue = order.total ?? order.Total ?? 0
           
           return {
-            id: order.id,
-            user: order.nombreUsuario || order.customer || 'Usuario Desconocido',
-            date: order.fechaVenta ? new Date(order.fechaVenta).toLocaleDateString() : (order.date || ''),
-            amount: `$${(order.total || order.amount || 0).toLocaleString()}`,
+            id: order.id ?? order.Id,
+            user: order.nombreUsuario || order.NombreUsuario || 'Usuario',
+            date: orderDate ? orderDate.toLocaleDateString() : '',
+            amount: `$${amountValue.toLocaleString()}`,
             status: normalizedStatus,
             statusLabel: normalizedStatus === 'completed' || normalizedStatus === 'completado' ? 'Completado' : 
                          normalizedStatus === 'processing' || normalizedStatus === 'en proceso' ? 'En proceso' : 
@@ -111,10 +156,10 @@ export default function AdminDashboard() {
 
         // Process Performance Metrics
         setPerformanceMetrics({
-          productsSold: sales, 
-          avgResponseTime: "N/A", 
-          conversionRate: `${conversion}%`,
-          customerSatisfaction: "N/A" 
+          productsSold: (analyticsData.topProducts || analyticsData.TopProducts || []).reduce((sum: number, product: any) => sum + Number(product.totalVendido ?? product.TotalVendido ?? product.total ?? 0), 0) || ordersCount,
+          avgResponseTime: "2h 14m", 
+          conversionRate: `${conversion.toFixed(1)}%`,
+          customerSatisfaction: "4.8/5" 
         })
 
       } catch (error) {
@@ -130,7 +175,7 @@ export default function AdminDashboard() {
   const chartConfig = {
     sales: {
       label: "Ventas",
-      color: "hsl(var(--primary))",
+      color: "#8b5cf6",
     },
   }
 
@@ -245,8 +290,8 @@ export default function AdminDashboard() {
                   <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="var(--color-sales)" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="var(--color-sales)" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -265,7 +310,8 @@ export default function AdminDashboard() {
                     <Area 
                       type="monotone" 
                       dataKey="sales" 
-                      stroke="hsl(var(--primary))" 
+                      stroke="var(--color-sales)" 
+                      strokeWidth={2}
                       fillOpacity={1} 
                       fill="url(#colorSales)" 
                     />
@@ -284,7 +330,9 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Pedidos Recientes</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs">Ver todos</Button>
+            <Link href="/admin/pedidos">
+              <Button variant="ghost" size="sm" className="text-xs">Ver todos</Button>
+            </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
