@@ -32,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getOrders } from "@/services/api"
+import { getAllOrders } from "@/services/api"
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
@@ -45,7 +45,7 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     setLoading(true)
     try {
-      const data = await getOrders()
+      const data = await getAllOrders()
       setOrders(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error(error)

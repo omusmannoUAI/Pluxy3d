@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { getAnalytics, getOrders, getUsers } from "@/services/api"
+import { getAnalytics, getAllOrders, getUsers } from "@/services/api"
 import Link from "next/link"
 
 export default function AdminDashboard() {
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
       try {
         const [analyticsData, ordersData, usersData] = await Promise.all([
           getAnalytics(),
-          getOrders(),
+          getAllOrders(),
           getUsers()
         ])
 

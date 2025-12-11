@@ -123,7 +123,7 @@ export default function Navbar() {
                     </Link>
                   </SheetClose>
                   {/* Admin link for mobile */}
-                  {user && user.role === "admin" && (
+                  {user && (user.role === "admin" || user.email === "admin@pluxy3d.com") && (
                     <SheetClose asChild>
                       <Link
                         href="/admin"
@@ -154,7 +154,7 @@ export default function Navbar() {
                     <li className="row-span-3">
                       <NavigationMenuLink asChild>
                         <Link
-                          href="/productos?category=impresoras"
+                          href="/productos?category=impresora"
                           className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-purple-500 to-purple-700 p-6 no-underline outline-none focus:shadow-md"
                         >
                           <div className="mt-4 mb-2 text-lg font-medium text-white">Impresoras 3D</div>
@@ -164,13 +164,13 @@ export default function Navbar() {
                         </Link>
                       </NavigationMenuLink>
                     </li>
-                    <ListItem href="/productos?brand=creality" title="Creality">
+                    <ListItem href="/productos?category=impresora&brand=creality" title="Creality">
                       Impresoras 3D de la marca Creality
                     </ListItem>
-                    <ListItem href="/productos?brand=hellbot" title="Hellbot">
+                    <ListItem href="/productos?category=impresora&brand=hellbot" title="Hellbot">
                       Impresoras 3D de la marca Hellbot
                     </ListItem>
-                    <ListItem href="/productos?brand=prusa" title="Prusa">
+                    <ListItem href="/productos?category=impresora&brand=prusa" title="Prusa">
                       Impresoras 3D de la marca Prusa
                     </ListItem>
                   </ul>
@@ -180,16 +180,16 @@ export default function Navbar() {
                 <NavigationMenuTrigger className="text-sm">Componentes</NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    <ListItem href="/productos?category=extrusores" title="Extrusores">
+                    <ListItem href="/productos?category=componente&search=extrusor" title="Extrusores">
                       Extrusores y kits de mejora
                     </ListItem>
-                    <ListItem href="/productos?category=hotend" title="HotEnd">
+                    <ListItem href="/productos?category=componente&search=hotend" title="HotEnd">
                       HotEnd y componentes térmicos
                     </ListItem>
-                    <ListItem href="/productos?category=placas" title="Placas de Impresión">
+                    <ListItem href="/productos?category=componente&search=placa" title="Placas de Impresión">
                       Placas de impresión y superficies
                     </ListItem>
-                    <ListItem href="/productos?category=resortes" title="Resortes">
+                    <ListItem href="/productos?category=componente&search=resorte" title="Resortes">
                       Resortes y componentes mecánicos
                     </ListItem>
                   </ul>
@@ -210,7 +210,7 @@ export default function Navbar() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
               {/* Admin link for desktop */}
-              {user && user.role === "admin" && (
+              {user && (user.role === "admin" || user.email === "admin@pluxy3d.com") && (
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
                     <Link href="/admin" className={cn(navigationMenuTriggerStyle(), "text-sm")}>
@@ -259,6 +259,15 @@ export default function Navbar() {
             >
               <Search className="h-4 w-4" />
             </Button>
+          )}
+
+          {/* Admin Dashboard Link */}
+          {user && (user.role === "admin" || user.email === "admin@pluxy3d.com") && (
+            <Link href="/admin">
+              <Button variant="ghost" size="icon" aria-label="Administración" className="shrink-0" title="Panel de Administración">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
           )}
 
           {/* Cart */}

@@ -46,8 +46,25 @@ export default function InventoryPage() {
   const loadInventory = async () => {
     setLoading(true)
     try {
-      const data = await getInventory()
-      setInventory(Array.isArray(data) ? data : [])
+      const response = await getInventory()
+      // Handle paginated response
+      const rawItems = response.items || (Array.isArray(response) ? response : [])
+      
+      // Map API data to component structure
+      const mappedItems = rawItems.map((item: any) => ({
+        id: item.id,
+        name: item.nombre || "Producto sin nombre",
+        sku: `SKU-${item.id.toString().padStart(6, '0')}`,
+        location: "Almacén A", // Default value
+        lastUpdated: new Date().toLocaleDateString(),
+        stock: item.stock || 0,
+        minStock: 10, // Default
+        maxStock: 100, // Default
+        status: (item.stock || 0) > 10 ? "Normal" : "Low",
+        price: item.precioBase || 0
+      }))
+
+      setInventory(mappedItems)
     } catch (error) {
       console.error(error)
       setInventory([])
@@ -80,7 +97,7 @@ export default function InventoryPage() {
     },
     {
       title: "Valor Total",
-      value: "$2.4M", // This would be calculated in a real app
+      value: `$${inventory.reduce((acc, item) => acc + (item.stock * (item.price || 0)), 0).toLocaleString()}`,
       icon: DollarSign,
       color: "text-purple-600",
       bg: "bg-purple-100",

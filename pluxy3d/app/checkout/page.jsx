@@ -79,6 +79,11 @@ export default function CheckoutPage() {
    */
   const [success, setSuccess] = useState(false)
 
+  /**
+   * @type {[Object|null, Function]} Datos de la orden confirmada
+   */
+  const [confirmedOrder, setConfirmedOrder] = useState(null)
+
   useEffect(() => {
     if (cart.length === 0 && !success) {
       router.push("/carrito")
@@ -233,6 +238,13 @@ export default function CheckoutPage() {
 
       const orderData = {
         items: itemsMapped,
+        // Mapeo de campos de dirección para el backend
+        provincia: shippingData.state,
+        ciudad: shippingData.city,
+        calle: shippingData.apartment 
+          ? `${shippingData.address}, ${shippingData.apartment}` 
+          : shippingData.address,
+        codigoPostal: shippingData.zipCode,
         shipping: {
           firstName: shippingData.firstName,
           lastName: shippingData.lastName,
@@ -265,7 +277,15 @@ export default function CheckoutPage() {
 
       console.log("Enviando orden:", orderData) // Para depuración
 
-      await createOrder(orderData)
+      const response = await createOrder(orderData)
+
+      // Guardar datos de la orden confirmada antes de limpiar el carrito
+      setConfirmedOrder({
+        id: response.id || Math.floor(100000 + Math.random() * 900000),
+        total: total,
+        date: new Date().toISOString(),
+        paymentMethod: paymentMethod
+      })
 
       // Simulamos éxito
       setSuccess(true)
@@ -281,8 +301,8 @@ export default function CheckoutPage() {
   }
 
   // Si el pedido fue exitoso, mostrar página de confirmación
-  if (success) {
-    return <OrderConfirmation total={total} />
+  if (success && confirmedOrder) {
+    return <OrderConfirmation order={confirmedOrder} />
   }
 
   return (
@@ -905,10 +925,19 @@ export default function CheckoutPage() {
 /**
  * Componente de confirmación de pedido
  * @param {Object} props - Propiedades del componente
- * @param {number} props.total - Total del pedido
+ * @param {Object} props.order - Datos de la orden confirmada
  */
-function OrderConfirmation({ total }) {
-  const orderNumber = Math.floor(100000 + Math.random() * 900000) // Número de pedido aleatorio para demo
+function OrderConfirmation({ order }) {
+  const { id, total, date, paymentMethod } = order
+  
+  const getPaymentMethodText = (method) => {
+    switch(method) {
+      case 'credit_card': return 'Tarjeta de Crédito/Débito'
+      case 'mercadopago': return 'MercadoPago'
+      case 'transfer': return 'Transferencia Bancaria'
+      default: return 'Método de pago'
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -922,11 +951,11 @@ function OrderConfirmation({ total }) {
         <div className="bg-gray-50 p-6 rounded-lg mb-8">
           <div className="flex justify-between mb-4">
             <span className="font-medium">Número de Pedido:</span>
-            <span>#{orderNumber}</span>
+            <span>#{id}</span>
           </div>
           <div className="flex justify-between mb-4">
             <span className="font-medium">Fecha:</span>
-            <span>{new Date().toLocaleDateString()}</span>
+            <span>{new Date(date).toLocaleDateString()}</span>
           </div>
           <div className="flex justify-between mb-4">
             <span className="font-medium">Total:</span>
@@ -934,7 +963,7 @@ function OrderConfirmation({ total }) {
           </div>
           <div className="flex justify-between">
             <span className="font-medium">Método de Pago:</span>
-            <span>Tarjeta de Crédito</span>
+            <span>{getPaymentMethodText(paymentMethod)}</span>
           </div>
         </div>
 
@@ -945,7 +974,7 @@ function OrderConfirmation({ total }) {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button asChild className="bg-purple-600 hover:bg-purple-700">
-            <Link href="/cuenta/pedidos">Ver Mis Pedidos</Link>
+            <Link href="/cuenta?tab=orders">Ver Mis Pedidos</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/">Volver a la Tienda</Link>

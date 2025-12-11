@@ -23,6 +23,7 @@ export async function getProducts(options = {}) {
     const queryParams = new URLSearchParams()
 
     if (options.category) queryParams.append("category", options.category)
+    if (options.search) queryParams.append("search", options.search)
     if (options.brand) {
       if (Array.isArray(options.brand)) {
         options.brand.forEach(b => queryParams.append("brand", b))
@@ -122,7 +123,15 @@ export async function getBrands() {
     const url = `${API_BASE_URL}/Brands`
     const response = await fetch(url)
     if (!response.ok) throw new Error("API not available")
-    return await response.json()
+    
+    const data = await response.json()
+    return data.map(brand => ({
+      id: brand.id,
+      name: brand.nombre,
+      logo: brand.logo,
+      active: brand.activo,
+      totalProducts: brand.totalProductos
+    }))
   } catch (error) {
     console.error("Error al obtener marcas:", error)
     return []
@@ -368,17 +377,59 @@ export async function createOrder(orderData) {
 }
 
 /**
- * Función para obtener pedidos
+ * Función para obtener los pedidos del usuario actual
  * @returns {Promise<Array>}
  */
-export async function getOrders() {
+export async function getMyOrders() {
   try {
-    const url = `${API_BASE_URL}/Orders`
-    const response = await fetch(url)
+    const url = `${API_BASE_URL}/Orders/mine`
+    const token = localStorage.getItem("token")
+    
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      headers: headers
+    })
+
     if (!response.ok) throw new Error("API not available")
     return await response.json()
   } catch (e) {
     console.error("Error al obtener pedidos:", e)
+    return []
+  }
+}
+
+/**
+ * Función para obtener todos los pedidos (Admin)
+ * @returns {Promise<Array>}
+ */
+export async function getAllOrders() {
+  try {
+    const url = `${API_BASE_URL}/Orders`
+    const token = localStorage.getItem("token")
+    
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      headers: headers
+    })
+
+    if (!response.ok) throw new Error("API not available")
+    return await response.json()
+  } catch (e) {
+    console.error("Error al obtener todos los pedidos:", e)
     return []
   }
 }

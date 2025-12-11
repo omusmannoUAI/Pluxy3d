@@ -24,16 +24,26 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useAuth } from "@/contexts/AuthContext"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { getMyOrders } from "@/services/api"
 
 export default function AccountPage() {
   const { user, logout, updateUser, loading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   /**
    * @type {[string, Function]} Tab activa
    */
   const [activeTab, setActiveTab] = useState("profile")
+
+  // Actualizar tab basada en URL
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    if (tab && ["profile", "orders", "addresses", "payment", "settings"].includes(tab)) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   /**
    * @type {[Object, Function]} Datos del formulario de perfil
@@ -54,58 +64,42 @@ export default function AccountPage() {
    */
   const [error, setError] = useState(null)
 
-  // Datos de ejemplo para pedidos
-  const orders = [
-    {
-      id: "ORD-001",
-      date: "2024-01-15",
-      status: "delivered",
-      total: 389099,
-      items: [
-        {
-          name: "Kit Mejora Ender-3",
-          quantity: 1,
-          price: 22750,
-        },
-        {
-          name: "Impresora Creality Ender-3 V2",
-          quantity: 1,
-          price: 366349,
-        },
-      ],
-    },
-    {
-      id: "ORD-002",
-      date: "2024-01-20",
-      status: "processing",
-      total: 45000,
-      items: [
-        {
-          name: "Filamento PLA 1.75mm",
-          quantity: 2,
-          price: 22500,
-        },
-      ],
-    },
-    {
-      id: "ORD-003",
-      date: "2024-01-25",
-      status: "shipped",
-      total: 125000,
-      items: [
-        {
-          name: "Kit Doble Tracción",
-          quantity: 1,
-          price: 19000,
-        },
-        {
-          name: "Placa de Impresión Magnética",
-          quantity: 1,
-          price: 35000,
-        },
-      ],
-    },
-  ]
+  const [orders, setOrders] = useState([])
+
+  const mapStatus = (statusName) => {
+    if (!statusName) return "processing"
+    const lower = statusName.toLowerCase()
+    if (lower.includes("entregado")) return "delivered"
+    if (lower.includes("enviado")) return "shipped"
+    if (lower.includes("pendiente") || lower.includes("procesando")) return "processing"
+    if (lower.includes("cancelado")) return "cancelled"
+    return "processing"
+  }
+
+  useEffect(() => {
+    if (activeTab === "orders" && user) {
+      const fetchOrders = async () => {
+        try {
+          const data = await getMyOrders()
+          const mappedOrders = data.map(order => ({
+            id: order.id,
+            date: order.fechaVenta,
+            status: mapStatus(order.estadoNombre),
+            total: order.total,
+            items: order.items.map(item => ({
+              name: item.nombreProducto,
+              quantity: item.cantidad,
+              price: item.precioUnitario
+            }))
+          }))
+          setOrders(mappedOrders)
+        } catch (err) {
+          console.error("Error fetching orders:", err)
+        }
+      }
+      fetchOrders()
+    }
+  }, [activeTab, user])
 
   // Redirigir si no está autenticado
   useEffect(() => {

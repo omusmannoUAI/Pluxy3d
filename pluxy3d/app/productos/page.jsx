@@ -16,8 +16,11 @@ import Image from "next/image"
 import { Filter, Search, ShoppingCart, Heart, AlertCircle, RefreshCcw, Star, Grid, List } from "lucide-react"
 import { getProducts, getCategories, getBrands } from "@/services/api"
 import { useCart } from "@/contexts/CartContext"
+import { useSearchParams } from "next/navigation"
 
 export default function ProductosPage() {
+  const searchParams = useSearchParams()
+
   // Estados para los productos y filtros
   /**
    * @type {[Array, Function]} productos y función para actualizarlos
@@ -48,7 +51,7 @@ export default function ProductosPage() {
   /**
    * @type {[string, Function]} categoría seleccionada
    */
-  const [selectedCategory, setSelectedCategory] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState((searchParams.get("category") || "").toLowerCase())
 
   /**
    * @type {[Array<string>, Function]} marcas seleccionadas
@@ -63,7 +66,7 @@ export default function ProductosPage() {
   /**
    * @type {[string, Function]} consulta de búsqueda
    */
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
 
   /**
    * @type {[string, Function]} opción de ordenamiento
@@ -82,15 +85,12 @@ export default function ProductosPage() {
         setLoading(true)
         setError(null)
 
-        // Cargar productos, categorías y marcas en paralelo
-        const [productsData, categoriesData, brandsData] = await Promise.all([
-          getProducts(),
+        // Cargar categorías y marcas en paralelo
+        const [categoriesData, brandsData] = await Promise.all([
           getCategories(),
           getBrands(),
         ])
 
-        console.log("[v0] Products loaded:", productsData.length)
-        setProducts(productsData)
         setCategories(categoriesData)
         setBrands(brandsData)
       } catch (err) {
@@ -104,6 +104,20 @@ export default function ProductosPage() {
     loadInitialData()
   }, [])
 
+  // Actualizar categoría y búsqueda cuando cambia la URL
+  useEffect(() => {
+    const category = searchParams.get("category")
+    const search = searchParams.get("search")
+    
+    if (category !== null && category.toLowerCase() !== selectedCategory) {
+      setSelectedCategory(category.toLowerCase())
+    }
+    
+    if (search !== null && search !== searchQuery) {
+      setSearchQuery(search)
+    }
+  }, [searchParams])
+
   // Now only triggers when filter values change, not on loading state
   useEffect(() => {
     const applyFilters = async () => {
@@ -114,6 +128,7 @@ export default function ProductosPage() {
         // Construir opciones de filtrado
         const filterOptions = {
           category: selectedCategory || undefined,
+          search: searchQuery || undefined,
           brand: selectedBrands.length > 0 ? selectedBrands : undefined,
           minPrice: priceRange[0] || undefined,
           maxPrice: 500000, // Valor máximo del slider
@@ -134,7 +149,7 @@ export default function ProductosPage() {
     }
 
     applyFilters()
-  }, [selectedCategory, selectedBrands, priceRange, sortOption])
+  }, [selectedCategory, searchQuery, selectedBrands, priceRange, sortOption])
 
   /**
    * Manejar cambio en marcas seleccionadas
@@ -214,10 +229,10 @@ export default function ProductosPage() {
                             <div key={category.id} className="flex items-center space-x-2">
                               <Checkbox
                                 id={`category-${category.id}`}
-                                checked={selectedCategory === category.id.toString()}
+                                checked={selectedCategory === category.name.toLowerCase()}
                                 onCheckedChange={(checked) => {
                                   if (checked) {
-                                    setSelectedCategory(category.id.toString())
+                                    setSelectedCategory(category.name.toLowerCase())
                                   } else {
                                     setSelectedCategory("")
                                   }
@@ -345,7 +360,7 @@ export default function ProductosPage() {
                   categories.map((category) => (
                     <TabsTrigger
                       key={category.id}
-                      value={category.id.toString()}
+                      value={category.name.toLowerCase()}
                     >
                       {category.name}
                     </TabsTrigger>
@@ -373,7 +388,7 @@ export default function ProductosPage() {
               {/* Contenido para cada categoría */}
               {!loading &&
                 categories.map((category) => (
-                  <TabsContent key={category.id} value={category.id.toString()} className="mt-6">
+                  <TabsContent key={category.id} value={category.name.toLowerCase()} className="mt-6">
                     {products.length > 0 ? (
                       <ProductsGrid products={products} viewMode={viewMode} />
                     ) : (

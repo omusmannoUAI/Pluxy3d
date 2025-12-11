@@ -12,7 +12,6 @@ import {
   LifeBuoy,
   FileText,
   BarChart3,
-  Settings,
 } from "lucide-react"
 import {
   Sidebar,
@@ -85,11 +84,6 @@ const items = [
     title: "Analíticas",
     url: "/admin/analiticas",
     icon: BarChart3,
-  },
-  {
-    title: "Configuración",
-    url: "/admin/configuracion",
-    icon: Settings,
   },
 ]
 
